@@ -1,0 +1,101 @@
+var map=[];
+      map[33]=0; //!
+      map[35]=1; //#
+      map[36]=2;
+      map[37]=3;
+      map[38]=4;
+      map[39]=5;
+      map[40]=6;
+      map[41]=7;
+      map[42]=8;
+      map[43]=9;
+      map[45]=10;//-
+      map[46]=11;
+      map[47]=12;
+      map[48]=13;//0
+      map[49]=14;
+      map[50]=15;
+      map[51]=16;
+      map[52]=17;
+      map[53]=18;
+      map[54]=19;
+      map[55]=20;
+      map[56]=21;
+      map[57]=22;
+      map[58]=23;//:
+      map[59]=24;
+      map[60]=25;
+      map[61]=26;
+      map[62]=27;
+      map[63]=28;
+      map[64]=29;
+      map[65]=30;//A
+      map[66]=31;
+      map[67]=32;
+      map[68]=33;
+      map[69]=34;
+      map[70]=35;
+      map[71]=36;
+      map[72]=37;
+      map[73]=38;
+      map[74]=39;
+      map[75]=40;
+      map[76]=41;
+      map[77]=42;
+      map[78]=43;
+      map[79]=44;
+      map[80]=45;
+      map[81]=46;
+      map[82]=47;
+      map[83]=48;
+      map[84]=49;
+      map[85]=50;
+      map[86]=51;
+      map[87]=52;
+      map[88]=53;
+      map[89]=54;
+      map[90]=55;
+      map[92]=56; //\
+      map[94]=57; //^
+      map[95]=58;
+      map[96]=59;
+      map[97]=60;//a
+      map[98]=61;
+      map[99]=62;
+      map[100]=63;
+      map[101]=64;
+      map[102]=65;
+      map[103]=66;
+      map[104]=67;
+      map[105]=68;
+      map[106]=69;
+      map[107]=70;
+      map[108]=71;
+      map[109]=72;
+      map[110]=73;
+      map[111]=74;
+      map[112]=75;
+      map[113]=76;
+      map[114]=77;
+      map[115]=78;
+      map[116]=79;
+      map[117]=80;
+      map[118]=81;
+      map[119]=82;
+      map[120]=83;
+      map[121]=84;
+      map[122]=85;
+      map[126]=86;//~
+
+
+
+      var base93decodeString=function (encodeString){
+        var decode=0;
+        if(encodeString){
+          for(i=encodeString.length-1;i>=0;i--){
+            var pow=Math.pow(87, encodeString.length-i-1);
+            decode+=(map[encodeString.charCodeAt(i)]*pow);
+          }
+        }
+        return decode;
+      }
