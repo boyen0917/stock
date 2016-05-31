@@ -3,45 +3,23 @@
     <head>
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        <script   src="https://code.jquery.com/jquery-2.2.3.min.js"   integrity="sha256-a23g1Nt4dtEYOj7bR+vTu7+T8VP13humZFBJNIYoEJo="   crossorigin="anonymous"></script>
+
+        <link rel="stylesheet" href="css/style.css" />
+
+        <!-- 請改成下載好的jquery -->
+        <script src="https://code.jquery.com/jquery-2.2.3.min.js" integrity="sha256-a23g1Nt4dtEYOj7bR+vTu7+T8VP13humZFBJNIYoEJo=" crossorigin="anonymous"></script>
 
         <script type="text/javascript" src="js/serverList.js"></script>
-        <script type="text/javascript" src="js/init.js"></script>
+        <script type="text/javascript" src="js/stockApi.js"></script>
+        <script type="text/javascript" src="js/stockUI.js"></script>
+
         <script src="tool/func.js"></script>
     	<script src="tool/base93.js"></script>
 	</head>
-
 	<body>
 
-		<button name="quote">quote</button>
-		<pre>
-		<code name="result" style="">
-		</code>
-
-		</pre>
-
-
-
-	<script type="text/javascript">
-
-		var stockObj = new StockApi();
-
-		stockObj.setting({
-			symbol: "000001.sh,399001.sz,00001.hk"
-		});
-
-		$(function(){
-
-			$("button").click(function() {
-				stockObj[$(this).attr("name")](function(result) {
-					$("code[name=result]").html(JSON.stringify(result,null,2))
-				})
-			})
-		})
-		
-
-	</script>
-
+		<!-- 暫時做法 指定id為 my-stock -->
+		<section id="my-stock"></section>
 
 
 	</body>

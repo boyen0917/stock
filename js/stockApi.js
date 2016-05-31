@@ -25,18 +25,16 @@
 			symbol,
 			serverIpArr = self.getServerListIpArr();
 
-		self.setting = function(options){
-			symbol = options.symbol;
-			serverIpArr = options.serverIpArr || self.getServerListIpArr();
 
-			return self;
-		};
+		// self.init();
 
 
-		self.quote = function(cb){
+		// api list
+
+		self.quote = function(optionObj,cb){
 			self.ajax({
 				apiName: "v2/quote",
-				symbol: symbol,
+				symbol: optionObj.symbol,
 				serverIpArr: serverIpArr,
 				callback: cb
 			});
@@ -46,6 +44,14 @@
 
 
 	StockApi.prototype = {
+		init: function() {
+
+			if(typeof StockUI !== "undefined") {
+				new StockUI();
+			}
+
+		},
+
 
 		getServerListIpArr: function(){
 			return ServerList.sites.map(function(item){
@@ -61,7 +67,6 @@
 	            var items = curr.split('\u0002'),
 	            	symbol = items[1],
 	              	time = datetimeStrFormat(base93decodeString(items[3]));
-	              	console.log("symbolllllllll",symbol);
 
 	            if(symbol !== undefined) {
 	            	obj[symbol] = {
@@ -111,9 +116,8 @@
 			}
 
 			$.when.apply($, serversDefArr).done(function() {
-
 				var resultObj = Array.prototype.reduce.call(arguments,function(obj,item){
-					console.log("item.data ajaxArgs",item.data.ajaxArgs);
+					// console.log("item.data ajaxArgs",item.data.ajaxArgs);
 					var thisObj = {};
 					if(item.isSuccess === true) {
 						try {
@@ -147,6 +151,19 @@
 				data: data,
 				msg: msg
 			}
+		},
+
+
+		deferred: function() {
+			var myResolve,myReject;
+			var myPromise = new Promise(function(resolve, reject){
+				myResolve = resolve;
+				myReject = reject;
+			});
+
+			myPromise.resolve = myResolve;
+			myPromise.reject = myReject;
+			return myPromise;
 		}
 	}
 

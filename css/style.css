@@ -1,0 +1,93 @@
+#stock-ui {
+  background: black;
+  color: white;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 99999; }
+  #stock-ui input {
+    border: 0; }
+  #stock-ui input:focus, #stock-ui button:focus {
+    outline: none; }
+  #stock-ui button {
+    background: none;
+    border: 0;
+    color: #1B6DD2;
+    cursor: pointer; }
+  #stock-ui span {
+    display: inline-block; }
+  #stock-ui section[data-role=page].next {
+    left: 100%; }
+  #stock-ui section[data-role=page].prev {
+    left: -100%; }
+  #stock-ui section[data-role=page] {
+    max-width: 800px;
+    width: 100vw;
+    margin: auto;
+    height: 100vh;
+    position: absolute;
+    z-index: 0;
+    background: black; }
+  #stock-ui section[data-role=page].active {
+    left: 0 !important;
+    transition: 0.5s;
+    z-index: 10; }
+  #stock-ui #page-quoteList {
+    /* section.stock-table */ }
+    #stock-ui #page-quoteList section.search {
+      width: 100%;
+      padding: 10px 0;
+      background: #1F2227; }
+      #stock-ui #page-quoteList section.search span {
+        vertical-align: top;
+        height: 29px; }
+      #stock-ui #page-quoteList section.search span.input {
+        width: 75%; }
+        #stock-ui #page-quoteList section.search span.input input {
+          display: block;
+          background: #000;
+          width: 90%;
+          height: 100%;
+          margin: auto;
+          font-size: 15px;
+          padding-left: 10px;
+          color: white; }
+      #stock-ui #page-quoteList section.search span.button {
+        width: 20%; }
+        #stock-ui #page-quoteList section.search span.button button {
+          display: block;
+          font-size: 18px;
+          margin: auto; }
+    #stock-ui #page-quoteList section.stock-table {
+      margin-top: 1px; }
+      #stock-ui #page-quoteList section.stock-table table {
+        width: 100%;
+        border-spacing: 0;
+        table-layout: fixed; }
+        #stock-ui #page-quoteList section.stock-table table td {
+          padding: 10px 20px;
+          overflow: hidden; }
+        #stock-ui #page-quoteList section.stock-table table td:not(:nth-child(1)) {
+          text-align: center;
+          font-size: 15px; }
+        #stock-ui #page-quoteList section.stock-table table thead {
+          background: #1F2227;
+          color: #1B6DD2;
+          font-size: 18px; }
+          #stock-ui #page-quoteList section.stock-table table thead th {
+            overflow: hidden; }
+          #stock-ui #page-quoteList section.stock-table table thead th:nth-child(1) {
+            height: 40px;
+            width: 40%;
+            padding-left: 20px;
+            text-align: left; }
+          #stock-ui #page-quoteList section.stock-table table thead th:not(:nth-child(1)) {
+            width: 30%; }
+        #stock-ui #page-quoteList section.stock-table table td div.change {
+          padding: 5px; }
+        #stock-ui #page-quoteList section.stock-table table td div.rise {
+          background: red; }
+        #stock-ui #page-quoteList section.stock-table table td div.fall {
+          background: #1F7425; }

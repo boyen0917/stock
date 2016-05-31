@@ -1,0 +1,14 @@
+#my-stock {
+  background: black;
+  color: white;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 99999; }
+  #my-stock section.main {
+    max-width: 800px;
+    margin: auto; }
+  #my-stock section[data-category=quote] table {
+    width: 100%; }

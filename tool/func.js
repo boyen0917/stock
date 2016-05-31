@@ -57,7 +57,7 @@ function compareDateTime(dt1){
       
 
       function priceStrFormat(priceStr,stockType){
-        console.log(priceStr+"   "+ stockType);
+        // console.log(priceStr+"   "+ stockType);
         if(stockType=="sh1400"){
           priceStr=parseFloat(priceStr/100000).toFixed(2);
         }
