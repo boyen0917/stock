@@ -36,6 +36,9 @@
 				apiName: "v2/quote",
 				symbol: optionObj.symbol,
 				serverIpArr: serverIpArr,
+
+				// parse map 
+
 				callback: cb
 			});
 		};
@@ -44,14 +47,6 @@
 
 
 	StockApi.prototype = {
-		init: function() {
-
-			if(typeof StockUI !== "undefined") {
-				new StockUI();
-			}
-
-		},
-
 
 		getServerListIpArr: function(){
 			return ServerList.sites.map(function(item){

@@ -3,7 +3,7 @@
 	window[name] = definition();
 
 	window.onload = function(){
-		window[name].init("my-stock");
+		new window[name]("my-stock");
 	}
 	
 
@@ -16,25 +16,27 @@
 
 	// };
 
-	var StockUI = {
+	var StockUI = function(){
 
-		keyID: "my-stock",
+		this.keyID = "my-stock";
 
-		stockApi: new StockApi(),
+		this.stockApi = new StockApi();
+
+		this.stockView = new StockView(); // init
+
+		this.init(this.keyID);
 
 		// 第一步就是朝所有event 都在這裡 其他的都是customEvent
-		handleEvent: function() {
-
-			// 防連點
+		this.handleEvent = function() {
+			// 防連點 start
 			var lastViewId,lastClickTime;
-
 			return function(event) {
-
 				var viewId = event.currentTarget.dataset.ui;
-
 				//禁止連點
 				if(lastViewId === viewId && lastClickTime-(new Date().getTime()) < 1000) return;
+			// 防連點 end
 
+				// all event here
 				switch(event.type) {
 					case "click":
 
@@ -44,7 +46,7 @@
 						switch(viewId) {
 
 							case "ui-back":
-								this.changePage("page-quoteList",true);
+								this.stockView.changePage("page-quoteList",true);
 							break;
 
 							default:
@@ -56,16 +58,19 @@
 					break;
 				}
 			}
-				
-		}(),
+		}();
+	}
 
+	StockUI.prototype = {
 
 		init: function(domId){
 
 			var self = this;
 
-			self.mainDom = document.getElementById(domId);
+			// self.stockView = new StockView();
 
+			self.mainDom = document.getElementById(domId);
+			// console.log(self.stockView.create);
 			try {
 				if( self.mainDom instanceof HTMLElement === false
 					|| window.StockApi === undefined
@@ -77,7 +82,7 @@
 
 			// initial page
 
-			Viewer.create({
+			self.stockView.create({
 				viewId: "stock-ui",
 				tag: "section",
 				attr: { id: "stock-ui" },
@@ -88,7 +93,7 @@
 
 			// quoteList page
 
-			Viewer.create({
+			self.stockView.create({
 				viewId: "page-quoteList",
 				tag: "section",
 				attr: {
@@ -96,7 +101,7 @@
 					class: "active"
 				},
 				dataset: {role: "page"},
-				html: self.quoteListHtml(),
+				html: self.stockView.quoteListPageHtml(),
 				eventBinding: function(element) {
 					// element.querySelectorAll("section.page-header > button")[0].addEventListener("click",self);
 				},
@@ -119,9 +124,9 @@
 					Object.keys(contentObj.data).forEach(function(key) {
 						var stockObj = contentObj.data[key];
 
-						if(Viewer.map["quote_"+key] === undefined) {
+						if(self.stockView.map["quote_"+key] === undefined) {
 
-							Viewer.create({
+							self.stockView.create({
 								viewId: "quote_" + key,
 								tag: "tr",
 								html: '<td></td><td></td><td></td>',
@@ -146,15 +151,15 @@
 								
 							});
 						} else {
-							Viewer.map["quote_"+key].data = stockObj;
+							self.stockView.map["quote_"+key].data = stockObj;
 						}
 					}); 
 					
-					Object.keys(Viewer.map).forEach(function(key) {
+					Object.keys(self.stockView.map).forEach(function(key) {
 
 						if(key.indexOf("quote_") === 0) {
 
-							Viewer.map[key].render();
+							self.stockView.map[key].render();
 						}
 					});
 				});
@@ -165,82 +170,20 @@
 		
 		showQuoteDetail: function(viewId) {
 			// console.log("showQuoteDetail viewId",viewId);
-			this.changePage("page-quoteDetail");
-		},
-
-
-		changePage: function(pageId,isReverse) {
-			var self = this,
-				direction = (isReverse || false) ? "prev" : "next",
-				deferred = self.stockApi.deferred();
-			// console.log("changePage",self.mainDom.querySelectorAll("section[data-role=page]"));
-			// console.log("this",self);
-			if(document.getElementById(pageId) === null) {
-
-				Viewer.create({
-					viewId: pageId,
-					tag: "section",
-					attr: {id: pageId },
-					dataset: {role: "page"},
-					html: self.quoteDetailHtml(),
-					eventBinding: function(element) {
-						element.querySelectorAll("section.page-header > button")[0].addEventListener("click",self);
-					},
-					renderNow: function(element) {
-						document.getElementById("stock-ui").appendChild(element);
-					}
-				});
-			}
-
-			document.querySelectorAll("section[data-role=page].active")[0].removeClass("active")
-			Viewer.map[pageId].element.addClass(direction);
-			setTimeout(function(){
-				Viewer.map[pageId].element.removeClass(direction);
-				Viewer.map[pageId].element.addClass("active");
-			},50);
-			
-
-			return deferred;
-		},
-
-		quoteListHtml: function() {
-			return '<section class="search">' +
-			'		<span class="input"><input placeholder="請輸入股票名稱/代號/首字母"></span>' +
-			'		<span class="button"><button class="edit">編輯</button></span>' +
-			'	</section>' +
-			'	<section class="stock-table">' +
-			'		<table>' +
-			'			<thead>' +
-			'				<tr>' +
-			'					<th>名稱代碼</th>' +
-			'					<th>最新價</th>' +
-			'					<th>漲跌幅</th>' +
-			'				</tr>' +
-			'			</thead>' +
-			'			<tbody>' +
-			'		</table>' +
-			'</section>';
-		},
-
-		quoteDetailHtml: function() {
-			return '<section class="page-header">' +
-			'		<button data-ui="ui-back"><-</button>' +
-			'		<div><div>上證指數</div><div>SH000001</div></div>' +
-			'	</section>' +
-			'	<section class="title">title' +
-			'	</section>' +
-			'	<section class="content">content' +
-			'	</section>' +
-			'	<section class="footer">footer' +
-			'</section>';
+			this.stockView.changePage("page-quoteDetail");
 		}
 
 	}
 
 
-	window.Viewer = {
+	var StockView = function() {
 
-		map: {}, // all views here
+		this.map = {}; // all views here
+
+		this.historyPath = [];
+	}
+
+	StockView.prototype = {
 
 		create: function(opObj) {
 			// try {
@@ -303,8 +246,125 @@
 			return opObj.viewId;
 		},
 
+		changePage: function(pageId,isReverse) {
+			var self = this;
+			
+			self.stockApi = new StockApi();
 
-	}
+			var direction = (isReverse || false) ? "prev" : "next",
+				deferred = self.stockApi.deferred();
+			// console.log("changePage",self.mainDom.querySelectorAll("section[data-role=page]"));
+			// console.log("this",self);
+			if(document.getElementById(pageId) === null) {
+
+				self.create({
+					viewId: pageId,
+					tag: "section",
+					attr: {id: pageId },
+					dataset: {role: "page"},
+					html: function() {
+						var name = pageId.substring(pageId.indexOf("-")+1) + "PageHtml";
+						return self[name]()
+					}(),
+					eventBinding: function(element) {
+						element.querySelectorAll("section.page-header > button")[0].addEventListener("click",StockUI);
+					},
+					renderNow: function(element) {
+						document.getElementById("stock-ui").appendChild(element);
+					}
+				});
+			}
+
+			document.querySelectorAll("section[data-role=page].active")[0].removeClass("active")
+			self.map[pageId].element.addClass(direction);
+			setTimeout(function(){
+				self.map[pageId].element.removeClass(direction);
+				self.map[pageId].element.addClass("active");
+			},50);
+			
+
+			return deferred;
+		},
+
+
+		quoteInputHtml: function() {
+			return ;
+		},
+
+		quoteListPageHtml: function() {
+			return '<section class="search">' +
+			'		<span class="input"><input placeholder="請輸入股票名稱/代號/首字母"></span>' +
+			'		<span class="button"><button class="edit">編輯</button></span>' +
+			'	</section>' + 
+			'	<section class="stock-table">' +
+			'		<table>' +
+			'			<thead>' +
+			'				<tr>' +
+			'					<th>名稱代碼</th>' +
+			'					<th>最新價</th>' +
+			'					<th>漲跌幅</th>' +
+			'				</tr>' +
+			'			</thead>' +
+			'			<tbody>' +
+			'		</table>' +
+			'</section>';
+		},
+
+		quoteDetailPageHtml: function() {
+			return '<section class="page-header">' +
+			'		<button data-ui="ui-back"><-</button>' +
+			'		<div><div>上證指數</div><div>SH000001</div></div>' +
+			'	</section>' +
+			'	<section class="title">title' +
+			'	</section>' +
+			'	<section class="content">content' +
+			'	</section>' +
+			'	<section class="footer">footer' +
+			'</section>';
+		}
+
+	};
+
+
+
+	var changePage = function(pageId,isReverse) {
+		var self = this;
+		self.historyPath = [];
+		self.stockApi = new StockApi();
+		self.stockView = new stockView();
+
+		var direction = (isReverse || false) ? "prev" : "next",
+			deferred = self.stockApi.deferred();
+		// console.log("changePage",self.mainDom.querySelectorAll("section[data-role=page]"));
+		// console.log("this",self);
+		if(document.getElementById(pageId) === null) {
+
+			self.stockView.create({
+				viewId: pageId,
+				tag: "section",
+				attr: {id: pageId },
+				dataset: {role: "page"},
+				html: self.quoteDetailHtml(),
+				eventBinding: function(element) {
+					element.querySelectorAll("section.page-header > button")[0].addEventListener("click",self);
+				},
+				renderNow: function(element) {
+					document.getElementById("stock-ui").appendChild(element);
+				}
+			});
+		}
+
+		document.querySelectorAll("section[data-role=page].active")[0].removeClass("active")
+		self.stockView.map[pageId].element.addClass(direction);
+		setTimeout(function(){
+			self.stockView.map[pageId].element.removeClass(direction);
+			self.stockView.map[pageId].element.addClass("active");
+		},50);
+		
+
+		return deferred;
+	};
+	
 
 
 	// tool
