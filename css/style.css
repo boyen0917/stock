@@ -1,6 +1,6 @@
 #stock-ui {
-  background: black;
-  color: white;
+  background: white;
+  color: #555;
   position: absolute;
   top: 0;
   left: 0;
@@ -14,7 +14,7 @@
   #stock-ui button {
     background: none;
     border: 0;
-    color: #1B6DD2;
+    color: #555;
     cursor: pointer; }
   #stock-ui span {
     display: inline-block; }
@@ -29,17 +29,46 @@
     height: 100vh;
     position: absolute;
     z-index: 0;
-    background: black; }
+    background: white; }
   #stock-ui section[data-role=page].active {
     left: 0 !important;
+    top: 0;
     transition: 0.5s;
-    z-index: 10; }
+    z-index: 10;
+    display: block; }
+  #stock-ui [data-role=row] {
+    width: 100%;
+    display: block;
+    overflow: auto; }
+    #stock-ui [data-role=row].ui-bottom {
+      position: absolute;
+      bottom: 0; }
+  #stock-ui > .content {
+    width: 100vw;
+    height: 100vh;
+    max-width: 800px;
+    position: relative;
+    margin: auto; }
+  #stock-ui section.page-header {
+    background: whitesmoke;
+    padding: 8px;
+    text-align: center;
+    height: 35px; }
+    #stock-ui section.page-header button {
+      position: absolute;
+      left: 10px;
+      top: 10px; }
+      #stock-ui section.page-header button img {
+        width: 20px;
+        height: 25px; }
+    #stock-ui section.page-header > div {
+      display: inline-block; }
   #stock-ui #page-quoteList {
     /* section.stock-table */ }
     #stock-ui #page-quoteList section.search {
       width: 100%;
       padding: 10px 0;
-      background: #1F2227; }
+      background: whitesmoke; }
       #stock-ui #page-quoteList section.search span {
         vertical-align: top;
         height: 29px; }
@@ -47,13 +76,13 @@
         width: 75%; }
         #stock-ui #page-quoteList section.search span.input input {
           display: block;
-          background: #000;
+          background: white;
           width: 90%;
           height: 100%;
           margin: auto;
           font-size: 15px;
           padding-left: 10px;
-          color: white; }
+          color: #555; }
       #stock-ui #page-quoteList section.search span.button {
         width: 20%; }
         #stock-ui #page-quoteList section.search span.button button {
@@ -73,8 +102,8 @@
           text-align: center;
           font-size: 15px; }
         #stock-ui #page-quoteList section.stock-table table thead {
-          background: #1F2227;
-          color: #1B6DD2;
+          background: whitesmoke;
+          color: #555;
           font-size: 18px; }
           #stock-ui #page-quoteList section.stock-table table thead th {
             overflow: hidden; }
@@ -86,8 +115,81 @@
           #stock-ui #page-quoteList section.stock-table table thead th:not(:nth-child(1)) {
             width: 30%; }
         #stock-ui #page-quoteList section.stock-table table td div.change {
-          padding: 5px; }
+          padding: 5px;
+          max-width: 100px;
+          margin: auto; }
         #stock-ui #page-quoteList section.stock-table table td div.rise {
-          background: red; }
+          background: red;
+          overflow: hidden;
+          color: white; }
         #stock-ui #page-quoteList section.stock-table table td div.fall {
-          background: #1F7425; }
+          background: #1F7425;
+          color: white; }
+  #stock-ui #qdA .title {
+    background: #eee;
+    font-size: 0;
+    height: 60px;
+    border-top: 1px solid #bbb;
+    border-bottom: 1px solid #bbb; }
+    #stock-ui #qdA .title > span {
+      font-size: 15px;
+      height: 100%;
+      text-align: center;
+      vertical-align: top; }
+      #stock-ui #qdA .title > span > div:first-child {
+        margin-top: 10px !important; }
+    #stock-ui #qdA .title > span:first-child {
+      width: 30%;
+      color: red; }
+      #stock-ui #qdA .title > span:first-child > div:nth-child(2) > span {
+        font-size: 12px;
+        margin-right: 5px; }
+    #stock-ui #qdA .title > span:last-child {
+      border-left: 1px solid #bbb;
+      width: 70%; }
+      #stock-ui #qdA .title > span:last-child > div {
+        max-width: 80%;
+        margin: auto;
+        text-align: left; }
+        #stock-ui #qdA .title > span:last-child > div span {
+          width: 50%;
+          text-align: left; }
+  #stock-ui #qdD > span {
+    width: 50%;
+    background: #efefef;
+    border: 1px solid #bbb;
+    text-align: center;
+    height: 50px;
+    line-height: 50px;
+    cursor: pointer; }
+  #stock-ui .col-1, #stock-ui .col-2, #stock-ui .col-3, #stock-ui .col-4, #stock-ui .col-5, #stock-ui .col-6, #stock-ui .col-7, #stock-ui .col-8, #stock-ui .col-9, #stock-ui .col-10, #stock-ui .col-11, #stock-ui .col-12 {
+    float: left;
+    position: relative;
+    min-height: 1px;
+    box-sizing: border-box;
+    -webkit-box-sizing: border-box;
+    white-space: nowrap; }
+  #stock-ui .col-1 {
+    width: 8.33333%; }
+  #stock-ui .col-2 {
+    width: 16.66667%; }
+  #stock-ui .col-3 {
+    width: 25%; }
+  #stock-ui .col-4 {
+    width: 33.33333%; }
+  #stock-ui .col-5 {
+    width: 41.66667%; }
+  #stock-ui .col-6 {
+    width: 50%; }
+  #stock-ui .col-7 {
+    width: 58.33333%; }
+  #stock-ui .col-8 {
+    width: 66.66667%; }
+  #stock-ui .col-9 {
+    width: 75%; }
+  #stock-ui .col-10 {
+    width: 83.33333%; }
+  #stock-ui .col-11 {
+    width: 91.66667%; }
+  #stock-ui .col-12 {
+    width: 100%; }

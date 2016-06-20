@@ -1,11 +1,29 @@
+$general1: black;
 $color1: #1B6DD2;
 $bg1: #1F2227;
 $size1: 18px;
 
+$general2: white;
+$color2: #555;
+$bg2: rgb(245,245,245);
+$size2: 18px;
+
+
+
+
+$general:$general2;
+$color: $color2;
+$bg: $bg2;
+$size:$size2;
+
+
+
+$qdTitleBDR: 1px solid #bbb;
+
 #stock-ui {
 
-	background: black;
-	color: white;
+	background: $general;
+	color: $color;
 	position: absolute;
 	top: 0;
 	left: 0;
@@ -15,7 +33,7 @@ $size1: 18px;
 
 	input { border: 0; }
 	input:focus,button:focus { outline: none; }
-	button { background: none; border: 0; color: $color1; cursor: pointer; }
+	button { background: none; border: 0; color: $color; cursor: pointer; }
 	span { display: inline-block; }
 
 	section[data-role=page].next { left: 100%; }
@@ -28,13 +46,54 @@ $size1: 18px;
 		height: 100vh;
 		position: absolute;
 		z-index: 0;
-		background: black;
+		background: $general;
 	}
 
 	section[data-role=page].active {
 		left: 0!important;
+		top: 0;
 		transition: 0.5s;
 		z-index: 10;
+		display: block;
+	}
+
+	[data-role=row] {
+		width: 100%;
+    	display: block;
+	    overflow: auto;
+
+	    &.ui-bottom {
+			position: absolute;
+			bottom: 0;
+		}
+	}
+
+
+	> .content {
+	    width: 100vw;
+	    height: 100vh;
+	    max-width: 800px;
+	    position: relative;
+	    margin: auto;	
+	}
+
+	section.page-header {
+		background: $bg;
+	    padding: 8px;
+	    text-align: center;
+	    height: 35px;
+
+		button {
+		    position: absolute;
+		    left: 10px;
+		    top: 10px;
+			img {
+				width: 20px;
+				height: 25px;
+			}
+		}
+
+		> div { display: inline-block; }
 	}
 
 	#page-quoteList {
@@ -42,7 +101,7 @@ $size1: 18px;
 		section.search {
 			width: 100%;
 			padding: 10px 0;
-			background: $bg1;
+			background: $bg;
 
 			span { vertical-align: top; height: 29px;}
 
@@ -51,13 +110,13 @@ $size1: 18px;
 
 				input { 
 					display: block;
-					background: #000;
+					background: $general;
 					width: 90%; 
 					height: 100%;
 					margin: auto;
 					font-size: 15px;
 					padding-left: 10px;
-					color: white;
+					color: $color;
 				} 
 			}
 
@@ -86,9 +145,9 @@ $size1: 18px;
 				}
 
 				thead {
-					background: $bg1;
-					color: $color1;
-					font-size: $size1;
+					background: $bg;
+					color: $color;
+					font-size: $size;
 					th { overflow: hidden;}
 					th:nth-child(1) {
 						height: 40px;
@@ -100,10 +159,87 @@ $size1: 18px;
 					th:not(:nth-child(1)) { width: 30%; }
 				}
 
-				td div.change { padding: 5px; }
-				td div.rise { background: red; }
-				td div.fall { background: #1F7425; }
+				td div.change { padding: 5px; max-width: 100px; margin: auto;}
+				td div.rise { background: red; overflow: hidden; color: white;}
+				td div.fall { background: #1F7425; color: white;}
 			}
 		} /* section.stock-table */
 	}
+
+	#page-quoteDetail {
+
+	}
+
+	#qdA {
+		.title {
+			background: #eee;
+			font-size: 0;
+			height: 60px;
+			border-top: $qdTitleBDR;
+			border-bottom: $qdTitleBDR;
+
+			> span { 
+				font-size: 15px;
+				height: 100%;
+				text-align: center; 
+				vertical-align: top;
+				> div:first-child { margin-top: 10px!important; }
+			}
+
+			> span:first-child { 
+				width: 30% ;
+				color: red;
+				> div:nth-child(2) > span { 
+					font-size: 12px; 
+					margin-right: 5px;
+				}
+			}
+			> span:last-child { 
+				border-left: $qdTitleBDR;
+				width: 70%; 
+
+				> div {
+					max-width: 80%;
+    				margin: auto;
+					text-align: left;
+					span { width: 50%; text-align: left; }
+				}
+			}
+		}
+	}
+
+
+	#qdD {
+
+		> span {
+			width: 50%;
+		    background: #efefef;
+		    border: $qdTitleBDR;
+		    text-align: center;
+		    height: 50px;
+		    line-height: 50px;
+		    cursor: pointer;
+		}
+	}
+
+
+	// bootstrap
+
+	.col-1, .col-2, .col-3, .col-4, .col-5, .col-6, .col-7, .col-8, .col-9, .col-10, .col-11, .col-12 {
+    	float: left;
+		position: relative;
+		min-height: 1px;
+		box-sizing: border-box;
+		-webkit-box-sizing: border-box;
+		white-space: nowrap;
+	}
+
+	@for $i from 1 through 12 {
+	    $width: percentage($i / 12);
+	    .col-#{$i} {
+	        width: $width;
+	    }
+	}
+
+	
 }
