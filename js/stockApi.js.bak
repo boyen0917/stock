@@ -8,8 +8,6 @@
 
 	window.StockGlobal = {
 
-		domain: "180.163.112.216:22016",
-
 		token: "MitakeWeb"
 
 	}
@@ -23,55 +21,24 @@
 
 	 var StockApi = function(args) {
 		// = "000001.sh,399001.sz,00001.hk"
-		var self = this;
+		var self = this,
+			symbol,
+			serverIpArr = self.getServerListIpArr();
+
+
+		// self.init();
+
 
 		// api list
 
 		self.quote = function(optionObj,cb){
-
-			new MyAjax({
+			self.ajax({
 				apiName: "v2/quote",
 				symbol: optionObj.symbol,
-				callback: cb
-			})
-		};
-
-		self.cateranking = function(optionObj,cb){
-			new MyAjax({
-				apiName: "v2/cateranking",
-				symbol: optionObj.symbol,
 				serverIpArr: serverIpArr,
-				callback: cb
-			});
-		};
 
-		self.catequote = function(optionObj,cb){
-			new MyAjax({
-				apiName: "v2/catequote",
-				symbol: optionObj.symbol,
-				serverIpArr: serverIpArr,
-				callback: cb
-			});
-		};
+				// parse map 
 
-		
-		self.quotentrd1 = function(optionObj,cb){
-			new MyAjax({
-				apiName: "v2/quotentrd1",
-				symbol: optionObj.symbol,
-				serverIpArr: serverIpArr,
-				callback: cb
-			});
-		};
-
-
-		self.search = function(optionObj,cb){
-			console.log("optionObj.param=>"+optionObj.param);
-			new MyAjax({
-				apiName: "v1/search",
-				symbol:null,
-				param: optionObj.param,
-				serverIpArr: serverIpArr,
 				callback: cb
 			});
 		};
@@ -81,107 +48,13 @@
 
 	StockApi.prototype = {
 
-		init: function() {
-
-			if(typeof StockUI !== "undefined") {
-				new StockUI();
-			}
-
-		},
-
-
 		getServerListIpArr: function(){
 			return ServerList.sites.map(function(item){
 				return item.ip
 			});
 		},
-		getItemsDecode:function(apiName,segments){
 
-			var isDecode=[];
-
-			if(apiName=="v2/quote" || apiName=="v2/cateranking" || apiName=="v2/catequote"){
-				isDecode=[false,false,false,true,false,false,false,true,true,true,// 0-9
-				true,true,true,true,true,true,true,true,true,true, //10-19
-				true,false,true,true,true,true,true,true,false,true, //20-29
-				true,true,true,true,true,true,true,false,false,true]; //30-39};
-			}
-			if(apiName=="v1/search"){
-				isDecode=null;
-			}
-			return isDecode;
-		},
-		getItemsPrice:function(apiName,segments){
-			var isPrice=[];
-			if(apiName=="v2/quote" || apiName=="v2/cateranking" || apiName=="v2/catequote"){
-				//需修改
-				isPrice=[false,false,false,true,false,false,false,true,true,true,// 0-9
-				true,true,true,true,true,true,true,true,true,true, //10-19
-				true,false,true,true,true,true,true,true,false,true, //20-29
-				true,true,true,true,true,true,true,false,false,true]; //30-39};
-			}
-			if(apiName=="v1/search"){
-				isPrice=null;
-			}
-			return isPrice;
-		},
-		getItemsName:function(apiName,segments){
-
-			var names=[];
-
-			if(apiName=="v2/quote" || apiName=="v2/cateranking" || apiName=="v2/catequote"){
-				names=["status","symbol","name","datetime","pinyin","market",
-				"subtype","lastPrice","highPrice","lowPrice","openPrice",
-				"preClosePrice","changeRate","volume","nowVolume","turnoverRate",
-				"limitUp","limitDown","averageValue","change","amount",
-				"volumeRatio","buyPrice","sellPrice","buyVolume","sellVolume",
-				"totalValue","flowValue","netAsset","pe","roe",
-				"captitalization","circulatingShare","buyPrices","sellPrices","buyVolumes",
-				"sellVolumes","amplitudeRate","receipts"]; //30-39};
-			}
-			if(apiName=="v1/search"){
-				names=["symbol","name","pinyin","type","f"];
-			}
-			return names;
-		},
-
-		toArray: function(apiName,oriStr){
-			var arr=[];
-			var segments=oriStr.split('\u0004');
-
-			for(var i=0;i<segments.length;i++){
-				var rows=segments[i].split('\u0003');
-				var rowsArr=[];
-				var names=this.getItemsName(apiName,i);
-				var isDecode=this.getItemsDecode(apiName,i);
-				var isPrice=this.getItemsPrice(apiName,i);
-				
-				for(var j=0;j<rows.length;j++){
-					var items=rows[j].split('\u0002');
-					
-					var itemsRename=[];
-					for(var k=0;k<items.length;k++){
-						
-						if(null!=isDecode && isDecode[k]){
-							items[k]=base93decodeString(items[k]);
-						}
-						if(null!=isPrice && isPrice[k]){
-							//需調整
-							items[k]=priceStrFormat(items[k],items[5]+items[6])
-							
-						}
-						itemsRename[names[k]]=items[k];
-					}
-					rowsArr.push(itemsRename);
-				}
-				arr.push(rowsArr);
-			}
-
-			if(arr.length==1){
-				arr=arr[0];
-			}
-			
-			return arr;
-		},
+		
 
 		parser: function(oriStr){
 
@@ -213,6 +86,60 @@
 		},
 
 
+		ajax: function(ajaxArgs) {
+			var self = this,
+				deferred = $.Deferred(),
+				serversDefArr = [];
+
+			if(ajaxArgs.symbol === undefined) {
+
+				serversDefArr[serversDefArr.length] = this.resultFormat(false,"no symbol");
+
+			} else if(ajaxArgs.serverIpArr instanceof Array === false) {
+
+				serversDefArr[serversDefArr.length] = this.resultFormat(false,"serverIpArr is not an array");
+
+			} else {
+
+				ajaxArgs.serverIpArr.forEach(function(ip) {
+					serversDefArr[serversDefArr.length] = new MyAjax({
+						serverIp: ip,
+						apiName: ajaxArgs.apiName,
+						symbol: ajaxArgs.symbol
+					})
+				})
+			}
+
+			$.when.apply($, serversDefArr).done(function() {
+				var resultObj = Array.prototype.reduce.call(arguments,function(obj,item){
+					// console.log("item.data ajaxArgs",item.data.ajaxArgs);
+					var thisObj = {};
+					if(item.isSuccess === true) {
+						try {
+							thisObj = self.resultFormat(true,"ajax success",self.parser(item.data.responseText));	
+						} catch(e) {
+							thisObj = self.resultFormat(false,"parse error",item.data);
+						}
+						
+					} else {
+						thisObj = self.resultFormat(false, (item.msg || "ajax error"),item.data);
+					}
+
+					obj[item.data.ajaxArgs.serverIp] = thisObj;
+					return obj;
+				},{});
+
+
+
+
+				deferred.resolve(resultObj);
+
+				if(typeof ajaxArgs.callback === "function") ajaxArgs.callback(resultObj);
+			})
+			
+			return deferred.promise();
+		},
+
 		resultFormat: function(isSuccess,msg,data) {
 			return {
 				isSuccess: isSuccess,
@@ -236,7 +163,7 @@
 	}
 
 
-	var MyAjax = function(args){
+	window.MyAjax = function(args){
 
 		var self = this;
 
@@ -247,7 +174,7 @@
 				if(args.url !== undefined) 
 					return args.url;
 				else
-					return "http://" + self.domain + "/" + args.apiName ;
+					return "http://" + args.serverIp + "/" + args.apiName ;
 			}(),
 
 			headers: function() {
@@ -263,12 +190,7 @@
 
 				// 設定預設值
 				newHeaders.Token = StockGlobal.token;
-				if(args.symbol){
-					newHeaders.Symbol = args.symbol;
-				}
-				if(args.param){
-					newHeaders.Param = args.param;
-				}
+				newHeaders.Symbol = args.symbol;
 				// newHeaders.Param 
 
 				return newHeaders;
@@ -330,35 +252,25 @@
 		// success 來這裡
 		ajaxDeferred.done(function(result){
 
-			// try {
-			// 	console.log("result", result);
-			// 	var responseObj = JSON.parse(result.data.responseText);
-			// } catch(e) {
-			// 	var responseObj = "unknown error";
-			// }
-        	
-
-			// // callback execute
-			// if(typeof self.newArgs.callback === "function") self.newArgs.callback({ isSuccess: result.isSuccess, data: responseObj});
-
-
 			// 成功失敗 都complete
 			self.onComplete(result.data);
 
 			if(completeCB instanceof Function) completeCB(result.data);
 
 			if(result.isSuccess === true) {
-				// self.onSuccess(result.data);	
+				self.onSuccess(result.data);	
 
 				if(successCB instanceof Function) {
+		        	var responseObj = JSON.parse(result.data.responseText);
 		    		responseObj.ajaxArgs = result.data.ajaxArgs;
 
 		        	successCB(responseObj);
 		        }
 			} else {
 
+				self.onError(result.data);
+
 				if(errorCB instanceof Function) errorCB(result.data);
-				else self.onError(result.data);
 			}
 
 	    })
@@ -370,8 +282,6 @@
 
 
 	MyAjax.prototype = {
-
-		domain: StockGlobal.domain,
 
 		onSuccess: function(data) {
 

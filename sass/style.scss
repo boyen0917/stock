@@ -1,24 +1,65 @@
 $general1: black;
-$color1: #1B6DD2;
-$bg1: #1F2227;
+$color1: #eee;
+$titleBg1: #1F2227;
 $size1: 18px;
+$qdBlock1: #1F2227;
+$qdTitleBDR1: 1px solid #444;
+$pageHeaderColor1: #eee;
 
 $general2: white;
 $color2: #555;
-$bg2: rgb(245,245,245);
+$titleBg2: rgb(245,245,245);
 $size2: 18px;
+$qdBlock2: #efefef;
+$qdTitleBDR2: 1px solid #bbb;
+
+$pageHeaderColor2: #555;
+
+
+@mixin headerBtn() {
+    position: absolute;
+    top: 10px;
+    width: 30px;
+    height: 30px;
+}
+
+@mixin mixScale($scale) {
+  -webkit-transform: scale($scale);
+     -moz-transform: scale($scale);
+      -ms-transform: scale($scale);
+          transform: scale($scale);
+}
+
+@mixin mixRotate($rotate) {
+  -webkit-transform: $rotate;
+     -moz-transform: $rotate;
+      -ms-transform: $rotate;
+          transform: $rotate;
+}
+
+@mixin mixRotateScale($rotate, $scale) {
+  -webkit-transform: rotateZ($rotate) scale($scale);
+     -moz-transform: rotateZ($rotate) scale($scale);
+      -ms-transform: rotateZ($rotate) scale($scale);
+          transform: rotateZ($rotate) scale($scale);
+}
+
+@mixin pagePseudo($bgColor) {
+	content: " ";
+    position: absolute;
+    background: $bgColor;
+}
 
 
 
-
-$general:$general2;
+$general: $general2;
 $color: $color2;
-$bg: $bg2;
-$size:$size2;
+$titleBg: $titleBg2;
+$size: $size2;
+$qdBlock: $qdBlock2;
+$qdTitleBDR: $qdTitleBDR2;
+$pageHeaderColor: $pageHeaderColor2;
 
-
-
-$qdTitleBDR: 1px solid #bbb;
 
 #stock-ui {
 
@@ -36,8 +77,9 @@ $qdTitleBDR: 1px solid #bbb;
 	button { background: none; border: 0; color: $color; cursor: pointer; }
 	span { display: inline-block; }
 
-	section[data-role=page].next { left: 100%; }
-	section[data-role=page].prev { left: -100%; }
+	section[data-role=page].next { left: 100%; display: block; }
+	section[data-role=page].prev { left: -100%; display: block; }
+	section[data-role=page].back { display: block;}
 
 	section[data-role=page] {
 		max-width: 800px;
@@ -47,12 +89,12 @@ $qdTitleBDR: 1px solid #bbb;
 		position: absolute;
 		z-index: 0;
 		background: $general;
+		display: none;
 	}
 
 	section[data-role=page].active {
 		left: 0!important;
 		top: 0;
-		transition: 0.5s;
 		z-index: 10;
 		display: block;
 	}
@@ -78,19 +120,85 @@ $qdTitleBDR: 1px solid #bbb;
 	}
 
 	section.page-header {
-		background: $bg;
+		background: $titleBg;
 	    padding: 8px;
 	    text-align: center;
-	    height: 35px;
+        height: 50px;
+    	box-sizing: border-box;
 
-		button {
-		    position: absolute;
+		button.left {
+			@include headerBtn();
 		    left: 10px;
-		    top: 10px;
-			img {
-				width: 20px;
-				height: 25px;
-			}
+		}
+
+		button.right {
+			@include headerBtn();
+		    right: 10px;
+		}
+
+		button.back:before {
+			@include pagePseudo($pageHeaderColor);
+		    width: 19px;
+		    height: 2px;
+		    @include mixRotateScale(52deg, 0.75);
+		    // transform: rotateZ(52deg) scale(0.75);
+		    left: 7px;
+		    top: 19px;
+		}
+
+		button.back:after {
+			@include pagePseudo($pageHeaderColor);
+		    width: 20px;
+		    height: 2px;
+		    @include mixRotateScale(308deg, 0.75);
+		    // transform: rotateZ(308deg) scale(0.75);
+		    left: 6px;
+		    top: 8px;
+		}
+
+		button.menu {
+			background: $pageHeaderColor;
+		    width: 23px;
+		    height: 23px;
+		    border-radius: 1px;
+		    @include mixScale(0.9);
+		}
+
+		button.menu:before {
+			@include pagePseudo($titleBg);
+		    width: 23px;
+    		height: 3px;
+    	    left: 0;
+    		top: 10px;
+		}
+
+		button.menu:after {
+			@include pagePseudo($titleBg);
+		    width: 3px;
+		    height: 23px;
+		    left: 10px;
+		    top: 0;
+		}
+
+		button.right.search { right: 20px; top: 10px;}
+
+		button.search:before {
+			@include pagePseudo("");
+			border: 3px solid $pageHeaderColor;
+		    width: 10px;
+		    height: 10px;
+		    border-radius: 15px;
+		    top: 2px;
+		}
+
+		button.search:after {
+			@include pagePseudo($pageHeaderColor);
+			@include mixRotate(rotateZ(52deg))
+		    width: 9px;
+		    height: 4px;
+		    top: 17px;
+		    left: 25px;
+		    border-radius: 20px;
 		}
 
 		> div { display: inline-block; }
@@ -101,7 +209,7 @@ $qdTitleBDR: 1px solid #bbb;
 		section.search {
 			width: 100%;
 			padding: 10px 0;
-			background: $bg;
+			background: $titleBg;
 
 			span { vertical-align: top; height: 29px;}
 
@@ -145,7 +253,7 @@ $qdTitleBDR: 1px solid #bbb;
 				}
 
 				thead {
-					background: $bg;
+					background: $titleBg;
 					color: $color;
 					font-size: $size;
 					th { overflow: hidden;}
@@ -171,12 +279,13 @@ $qdTitleBDR: 1px solid #bbb;
 	}
 
 	#qdA {
+		height: 60px;
 		.title {
-			background: #eee;
+			background: $qdBlock;
 			font-size: 0;
-			height: 60px;
 			border-top: $qdTitleBDR;
 			border-bottom: $qdTitleBDR;
+		    height: 100%;
 
 			> span { 
 				font-size: 15px;
@@ -202,23 +311,54 @@ $qdTitleBDR: 1px solid #bbb;
 					max-width: 80%;
     				margin: auto;
 					text-align: left;
-					span { width: 50%; text-align: left; }
+					> span { 
+						width: 50%; text-align: left; 
+						span.red { color: red }
+						span:nth-child(2) { margin-left: 10px}
+					}
+
+
 				}
+			}
+		}
+	}
+
+	#qdB {
+		border: $qdTitleBDR;
+		height: calc( 100vh - 160px); 
+	}
+
+	#qdC {
+		height: calc( 100vh - 160px); 
+		border: $qdTitleBDR;
+
+		.content {
+			padding: 10px;
+			> div {
+			    margin: 5px 0;
+				> span:first-child { 
+					color: green;
+					width: 30%; 
+					text-align: center; 
+				}
+
+				> span:last-child { width: 70%; text-align: right; }
 			}
 		}
 	}
 
 
 	#qdD {
-
+		height: 50px;
 		> span {
 			width: 50%;
-		    background: #efefef;
+		    background: $qdBlock;
 		    border: $qdTitleBDR;
 		    text-align: center;
-		    height: 50px;
+		    height: 100%;
 		    line-height: 50px;
 		    cursor: pointer;
+		    box-sizing: border-box;
 		}
 	}
 

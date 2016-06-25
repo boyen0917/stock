@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+
+        <!-- 請改成下載好的jquery -->
+        <script src="js/jquery.min.js"></script>
+	</head>
+	<body>
+
+		<input type="file">
+
+
+		<script>
+
+			$("input").change(function(){
+				var file = this.files[0];
+
+				var fileURL = URL.createObjectURL(file);
+
+				var video = document.createElement('video');
+				video.src = fileURL;
+
+				video.onloadeddata = function() {
+					window.video = video;
+					var canvas = document.createElement('canvas');
+					canvas.width = video.videoWidth;
+					canvas.height = video.videoHeight;
+					// get the canvas context for drawing
+					var context = canvas.getContext('2d');
+			 	
+					// draw the video contents into the canvas x, y, width, height
+	                canvas.getContext('2d').drawImage( video, 0, 0, video.videoWidth, video.videoHeight);
+			 
+					// get the image data from the canvas object
+	                var dataURL = canvas.toDataURL();
+					// set the source of the img tag
+					window.img = document.createElement('img');
+					img.src = dataURL;
+				}
+
+					
+			});
+
+
+		</script>
+
+	</body>
+</html>

@@ -6,7 +6,6 @@
 		window.ui = new window[name]("stock-ui");
 	}
 	
-
 }("StockUI", function() {
 
 
@@ -14,14 +13,15 @@
 
 		this.stockId = "stock-ui";
 
+		this.defaultSymbol = "000001.sh,399001.sz,00001.hk,00379.hk,00145.hk,00552.hk";
+
 		this.stockApi = new StockApi();
 
-		this.stockView = new StockView(this); // init
+		this.stockView = new StockView();
 
 		this.homePageId = "page-quoteList";
 
 		this.historyPath = [{ pageId: this.homePageId}];
-
 
 		this.init();
 
@@ -31,8 +31,6 @@
 			// 防連點 start
 			var lastViewId,lastClickTime;
 			return function(event) {
-				// var viewId = event.currentTarget.dataset.ui;
-
 				// 判斷event target 是否存在map中
 				if(event.currentTarget.viewId === undefined) return;
 				var viewId = event.currentTarget.viewId;
@@ -51,7 +49,7 @@
 								break;
 
 							case "qlA_submit":
-								alert(this.stockView.map.qlA_input.data.val);
+								this.qlASubmit();
 								break;
 
 							default:
@@ -65,14 +63,12 @@
 					case "keypress":
 						switch(viewId) {
 							case "qlA_input":
-								this.stockView.map.qlA_input.data.val = this.stockView.map.qlA_input.elem.value;
+								this.stockView.map.qlA_input.data.symbol = this.stockView.map.qlA_input.elem.value;
 
 								break;
 						}
 
 						break; // end of keypress
-
-
 				}
 			}
 		}();
@@ -108,41 +104,74 @@
 			});
 
 			// 首頁
-			self.pageInitial(self.homePageId);
+			self.pageInitial({pageId: self.homePageId, noPageHeader: true});
 
 			document.getElementById(self.homePageId).addClass("active");
 			
 		},
 
-		pageInitial: function(pageId, hasPageHeader) {
+		qlASubmit: function() {
+			getQuoteListView.call(this);
+		},
+
+		showQuoteDetail: function(fromViewId) {
+			var pageId = "page-quoteDetail",
+				fromViewIdObj = this.stockView.map[fromViewId];
+
+			this.pageInitial({pageId: pageId, data: fromViewIdObj.data});
+
+			// page title
+			this.stockView.map["page-header-quoteDetail"].data = '<div>' + fromViewIdObj.data.name + '</div><div style="font-size:12px;">' + fromViewIdObj.data.symbol + '</div>';
+			this.stockView.map["page-header-quoteDetail"].render();
+
+			// content
+
+			this.changePage(pageId);
+		},
+
+
+		pageInitial: function(initObj) {
+			// pageId,data, noPageHeader
 			var self = this,
+				pageId = initObj.pageId,
 				cpntPageId = pageId.split("-")[1],
 				pageElem = document.getElementById(pageId);
 
+			if(self.stockView.map.hasOwnProperty(pageId) === false) {
+				self.stockView.assign({
+					viewId: pageId,
+					elem: pageElem,
+					render: function() {
+						// 該頁面的成員 去畫面中尋找 並進行初始化
+						Object.keys(self.stockView.pageComponentMap[cpntPageId]).forEach(function(cpntId) {
+							var cpntObj = self.stockView.pageComponentMap[cpntPageId][cpntId],
+								viewObj = self.stockView.map[cpntId];
 
-			self.stockView.assign({
-				viewId: pageId,
-				elem: pageElem,
-				renderNow: function() {
-					// 該頁面的成員 去畫面中尋找 並進行初始化
-					Object.keys(self.stockView.pageComponentMap[cpntPageId]).forEach(function(cpntId) {
-						var cpntObj = self.stockView.pageComponentMap[cpntPageId][cpntId];
-						if(document.getElementById(cpntId) === null) return;
+							if(document.getElementById(cpntId) === null) return;
 
-						// 寫入component html
-						document.getElementById(cpntId).innerHTML = cpntObj.html();
+							if(self.stockView.map[cpntId] === undefined) {
+								// 寫入component html
+								document.getElementById(cpntId).innerHTML = cpntObj.html();
 
-						self.stockView.assign({
-							viewId: cpntId,
-							elem: document.getElementById(cpntId),
-							init: cpntObj.init.bind(self)
-						});
-					})
-				}
-			});
+								self.stockView.assign({
+									viewId: cpntId,
+									elem: document.getElementById(cpntId),
+									init: cpntObj.init.bind(self)
+								});
+							}
+
+							if(self.stockView.map[cpntId].render instanceof Function) self.stockView.map[cpntId].render();
+						})
+					}
+				});
+			}
+
+
+			self.stockView.map[pageId].data = initObj.data,
+			self.stockView.map[pageId].render();
 
 			// 非首頁 
-			if(hasPageHeader !== undefined) self.prependPageHeader(pageId);
+			if(initObj.noPageHeader === undefined) self.prependPageHeader(pageId);
 		},
 
 		prependPageHeader: function(pageId) {
@@ -155,10 +184,7 @@
 
 				self.stockView.create({
 					viewId: viewId,
-					html: '<section class="page-header">' +
-						'<button><img src="img/arrow-l.png"></button>' +
-						'<div></div>' +
-					'</section>',
+					html: '<section class="page-header"><button class="back left"></button><div></div></section>',
 					eventBinding: function(elem) {
 						self.stockView.assign({
 							viewId: "ui-back",
@@ -169,48 +195,38 @@
 						})
 					},
 					render: function(elem) {
-						console.log("vv", self.stockView.map[viewId].data);
 						elem.getElementsByTagName('div')[0].innerHTML = self.stockView.map[viewId].data;
 					}
 				});
 
-				pageHeaderObj = self.stockView.map[viewId];
 				// 只insert 1次 所以寫在外面
-				pageElem.insertBefore(pageHeaderObj.elem, document.getElementById(pageId).firstChild);
-				pageHeaderObj.render();
-			// } else {
-			// 	var headerElem = pageElem.getElementsByClassName('page-header')[0];
-			// 	headerElem.parentNode.removeChild(headerElem);
+				pageElem.insertBefore(self.stockView.map[viewId].elem, document.getElementById(pageId).firstChild);
 			}
-		},
-
-
-		showQuoteDetail: function(fromViewId) {
-			var qd = "page-quoteDetail",
-				fromViewIdObj = this.stockView.map[fromViewId];
-
-			this.pageInitial(qd, true);
-
-			// page title
-			this.stockView.map["page-header-quoteDetail"].data = '<div>' + fromViewIdObj.data.name + '</div><div style="font-size:12px;">' + fromViewIdObj.data.symbol + '</div>';
-
-			this.changePage(qd);
 		},
  
 		changePage: function(pageId,isBack) {
 			var self = this;
 
 			var direction = (isBack || false) ? "prev" : "next",
-				nextPage = self.stockView.map[pageId].elem;
-				deferred = self.stockApi.deferred();
+				nextPage = self.stockView.map[pageId].elem,
+				deferred = self.stockApi.deferred(),
+				oriPage = document.querySelectorAll("section[data-role=page].active")[0];
 
-			document.querySelectorAll("section[data-role=page].active")[0].removeClass("active");
-
+			oriPage.addClass("back").removeClass("active");
 			nextPage.addClass(direction);
-			setTimeout(function(){
-				nextPage.addClass("active");
-				nextPage.removeClass(direction);
 
+			setTimeout(function(){
+				nextPage
+				.addClass("active")
+				.removeClass(direction);
+
+				nextPage.style.transition = "0.5s";
+
+				// 動畫結束再刪掉
+				setTimeout(function () {
+					oriPage.removeClass.call(oriPage, "back");
+					nextPage.style.transition = "";
+				}, 600)
 				if(isBack !== true) self.historyPath.push({ pageId: pageId})
 			},50);
 			
@@ -234,32 +250,12 @@
 			quoteList: {
 				qlA: {
 					html: function() {
-						return '<section class="search">' +
-						'	<span class="input"><input placeholder="請輸入股票名稱/代號/首字母"></span>' +
-						'	<span class="button"><button class="edit">送出</button></span>' +
+						return '<section class="page-header">' +
+						'<button class="menu left"></button><div>行情中心</div><button class="right search"></button>' +
 						'</section>';
 					},
 					init: function() {
-						var self = this,
-							view = this.stockView.map.qlA.elem;
-
-						// 輸入股票event
-						self.stockView.assign({
-							viewId: "qlA_input",
-							elem: view.getElementsByTagName("input")[0],
-							eventBinding: function(thisElem) {
-								thisElem.addEventListener("keypress",self);
-							}
-						})
-
-						// 送出event
-						self.stockView.assign({
-							viewId: "qlA_submit",
-							elem: view.getElementsByTagName("button")[0],
-							eventBinding: function(thisElem) {
-								thisElem.addEventListener("click",self);
-							}
-						})
+						getQuoteListView.call(this);
 					}					
 				},
 
@@ -274,6 +270,40 @@
 					}					
 				}
 			},
+
+			quoteSearch: {
+				qsA: {
+					html: function() {
+						return '<section class="search">' +
+						'	<span class="input"><input placeholder="請輸入股票名稱/代號/首字母"></span>' +
+						'	<span class="button"><button class="edit">送出</button></span>' +
+						'</section>';
+					},
+					init: function() {
+						var self = this,
+							viewObj = this.stockView.map.qsA.elem;
+
+						// 輸入股票event
+						self.stockView.assign({
+							viewId: "qsA_input",
+							elem: viewObj.getElementsByTagName("input")[0],
+							eventBinding: function(thisElem) {
+								thisElem.addEventListener("keypress",self);
+							}
+						})
+
+						// 送出event
+						self.stockView.assign({
+							viewId: "qsA_submit",
+							elem: viewObj.getElementsByTagName("button")[0],
+							eventBinding: function(thisElem) {
+								thisElem.addEventListener("click",self);
+							}
+						})
+					}					
+				}
+			},
+
 			quoteDetail: {
 				qdA: {
 					html: function() {
@@ -289,9 +319,16 @@
 						var self = this, // this => bind stockUI
 							viewObj = self.stockView.map.qdA;
 
-						viewObj.elem.querySelectorAll("[name]").forEach(function(thisElem) {
+						viewObj.render = function() {
+							var qdData = self.stockView.map["page-quoteDetail"].data;
 
-						});
+							if(Object.keys(qdData).length > 0) {
+								viewObj.elem.querySelectorAll("[name]").forEach(function(thisElem) {
+									// thisElem.addClass("red");
+									thisElem.innerHTML = qdData[thisElem.getAttribute("name")] || "";
+								});
+							}
+						}
 					}					
 				},
 
@@ -306,15 +343,29 @@
 
 				qdC: {
 					html: function() {
+
 						return '<section class="content"> ' +
-						' <div><span>今開</span><span class="green">2814.65</span></div>' +
-						' <div><span>昨收</span><span class="red">2821.05</span></div>' +
-						' <div><span>最高</span><span class="">2814.65</span></div>' +
-						' <div><span>最低</span><span class="">2814.65</span></div>' +
+						' <div><span>今收</span><span name="price"></span></div>' +
+						' <div><span>今開</span><span name="open"></span></div>' +
+						' <div><span>最高</span><span name="hi"></span></div>' +
+						' <div><span>最低</span><span name="low"></span></div>' +
+						' <div><span>今量</span><span name="qty"></span></div>' +
 						'</section>';
 					},
 					init: function() {
-						
+						var self = this, // this => bind stockUI
+							viewObj = self.stockView.map.qdC;
+
+						viewObj.render = function() {
+							var qdData = self.stockView.map["page-quoteDetail"].data;
+
+							if(Object.keys(qdData).length > 0) {
+								viewObj.elem.querySelectorAll("[name]").forEach(function(thisElem) {
+									// thisElem.addClass("red");
+									thisElem.innerHTML = qdData[thisElem.getAttribute("name")] || "";
+								});
+							}
+						}
 					}					
 				},
 
@@ -385,23 +436,14 @@
 			this.map[opObj.viewId] = {
 				elem: elem,
 				data: opObj.data || {},
-				// opObj.render存在 return bind 
-				render: opObj.render !== undefined ? opObj.render.bind(this, elem) : (opObj.renderNow ? opObj.renderNow.bind(this, elem) : undefined)
-				// function() {
-				// 	if(opObj.render !== undefined) {
-				// 		return opObj.render.bind(this, elem);
-				// 	} else if(opObj.renderNow !== undefined) {
-				// 		return opObj.renderNow.bind(this, elem)
-				// 	}
-				// }()
+				render: opObj.render !== undefined ? opObj.render.bind(this, elem) : (opObj.renderNow ? opObj.renderNow.bind(this, elem) : undefined),
+				remove: removeView.bind({viewId: opObj.viewId, mapObj: this.map})
 			};
 
 			// event binding
 			if(typeof opObj.eventBinding === "function") opObj.eventBinding(elem);
-			// console.log(opObj);
 			// render now
 			if(typeof opObj.renderNow === "function") opObj.renderNow(elem);
-
 			// is Page Component init
 			if(typeof opObj.init === "function") opObj.init();
 		},
@@ -416,18 +458,31 @@
 
 		// ajax interval
 		// setInterval(function quoteInterval() {
-		
-			self.stockApi.quote({
-				symbol: "000001.sh,399001.sz,00001.hk,00379.hk,00145.hk,00552.hk"
-			},function(data){
 
+			// 比較原來的選股 沒有就刪除
+			// var symbolStr = self.stockView.map.qlA_input.elem.value || self.defaultSymbol;
+			// Object.keys(self.stockView.map).filter(function (viewId) {
+			// 	return viewId.indexOf("quote_") === 0;
+			// }).forEach(function (viewId) {
+			// 	if(symbolStr.indexOf(viewId.split("_")[1]) < 0) {
+			// 		self.stockView.map[viewId].remove();
+			// 	}
+			// });
+
+			// self.stockView.map.qlA_input.elem.value = "";
+
+			self.stockApi.quote({
+				symbol: self.defaultSymbol
+			},function(data){
+				console.log("quote",data);
 				var contentObj = data[Object.keys(data)[0]],
 					viewIdArr = [];
 
 				if(contentObj.isSuccess !== true) return;
-				console.log(contentObj.data);
+				
 				Object.keys(contentObj.data).forEach(function(key) {
-					
+					if(key === "") return;
+
 					var stockObj = contentObj.data[key]
 						viewId = "quote_" + key;
 
@@ -467,10 +522,10 @@
 							}(viewId)
 						});
 					} else {
-						viewObj.data = stockObj;
+						self.stockView.map[viewId].data = stockObj;
 					}
 				}); 
-				console.log("viewIdArr",viewIdArr);
+
 				viewIdArr.forEach(function(thisViewId) {
 					self.stockView.map[thisViewId].render();
 				});
@@ -478,20 +533,28 @@
 
 		// return quoteInterval }(),3000); // end of setInterval
 	}
+
 	
+	function removeView() {
+		this.mapObj[this.viewId].elem.parentNode.removeChild(this.mapObj[this.viewId].elem);
+		delete this.mapObj[this.viewId];
+	}
 
 
 	// tool
 	Element.prototype.addClass = function(cn){
 		this.className += " " + cn;
+		return this;
 	},
 
 	Element.prototype.removeClass = function(cn){
 		var tempArr = this.className.split(" ");
-		if(tempArr.indexOf(cn) < 0 ) return;
+		if(tempArr.indexOf(cn) < 0 ) return this;
 
 		tempArr.splice(tempArr.indexOf(cn),1);
 		this.className = tempArr.join(" ");
+
+		return this;
 	}
 
 

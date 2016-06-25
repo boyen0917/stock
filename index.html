@@ -7,7 +7,7 @@
         <link rel="stylesheet" href="css/style.css" />
 
         <!-- 請改成下載好的jquery -->
-        <script src="https://code.jquery.com/jquery-2.2.3.min.js" integrity="sha256-a23g1Nt4dtEYOj7bR+vTu7+T8VP13humZFBJNIYoEJo=" crossorigin="anonymous"></script>
+        <script src="js/jquery.min.js"></script>
 
         <script type="text/javascript" src="js/serverList.js"></script>
         <script type="text/javascript" src="js/stockApi.js"></script>
@@ -23,38 +23,43 @@
 		<section id="stock-ui">
 			<section class="content">
 				<section id="page-quoteList" data-role="page">
+					
 					<div data-role="row">
 						<section id="qlA" class="col-12"></section>
 						
 					</div>
+
 					<div data-role="row">
 						<section id="qlB" class="col-12"></section>
 					</div>
+
+				</section>
+
+				<section id="page-quoteSearch" data-role="page">
+					
+					<div data-role="row">
+						<section id="qsA" class="col-12"></section>
+						
+					</div>
+
+					<div data-role="row">
+						<section id="qsB" class="col-12"></section>
+					</div>
+					
 				</section>
 
 				<section id="page-quoteDetail" data-role="page">
+					
 					<div data-role="row">
 						<section id="qdA" class="col-12"></section>
 					</div>
 					<div data-role="row">
-						<section id="qdB" class="col-6"></section>
-						<section id="qdC" class="col-6"></section>
+						<section id="qdD" class="col-12"></section>	
 					</div>
-					<div data-role="row" class="ui-bottom">
-						<section id="qdD" class="col-12"></section>
+					<div data-role="row">
+						<section id="qdB" class="col-"></section>
+						<!-- <section id="qdC" class="col-4"></section> -->
 					</div>
-					<!-- <div data-role="row">
-						<section id="quoteInput" data-grid="col-12"></section>
-					</div> -->
-
-
-					<!-- 
-					<section class="title">title
-					</section>
-					<section class="content">content
-					</section>
-					<section class="footer">footer
-					</section> -->
 				</section>			
 
 			</section>
