@@ -9,10 +9,12 @@
         <!-- 請改成下載好的jquery -->
         <script src="js/jquery.min.js"></script>
 
-        <script type="text/javascript" src="js/serverList.js"></script>
+        <script type="text/javascript" src="js/page.js"></script>
         <script type="text/javascript" src="js/stockApi.js"></script>
         <script type="text/javascript" src="js/stockUI.js"></script>
 
+        <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+        
         <script src="tool/func.js"></script>
     	<script src="tool/base93.js"></script>
 	</head>
@@ -22,7 +24,26 @@
 		<!-- 暫時做法 指定id為 my-stock -->
 		<section id="stock-ui">
 			<section class="content">
-				<section id="page-quoteList" data-role="page">
+				<section id="stockMenu" data-role="page">
+					<div data-role="row">
+						<section id="smA" class="col-12"></section>
+					</div>
+					<div data-role="row">
+						<section id="smB" class="col-12"></section>
+					</div>
+					<div data-role="row">
+						<section id="smC" class="col-12"></section>
+					</div>
+
+					<div data-role="row">
+						<section id="smD" class="col-12"></section>
+					</div>
+					<div data-role="row">
+						<section id="smE" class="col-12"></section>
+					</div>
+				</section>
+
+				<section id="quoteList" data-role="page">
 					
 					<div data-role="row">
 						<section id="qlA" class="col-12"></section>
@@ -35,7 +56,7 @@
 
 				</section>
 
-				<section id="page-quoteSearch" data-role="page">
+				<section id="quoteSearch" data-role="page">
 					
 					<div data-role="row">
 						<section id="qsA" class="col-12"></section>
@@ -48,16 +69,16 @@
 					
 				</section>
 
-				<section id="page-quoteDetail" data-role="page">
+				<section id="quoteDetail" data-role="page">
 					
 					<div data-role="row">
-						<section id="qdA" class="col-12"></section>
+						<section id="qdE" class="col-12"></section>
 					</div>
 					<div data-role="row">
 						<section id="qdD" class="col-12"></section>	
 					</div>
 					<div data-role="row">
-						<section id="qdB" class="col-"></section>
+						<section id="qdB" class="col-12"></section>
 						<!-- <section id="qdC" class="col-4"></section> -->
 					</div>
 				</section>			

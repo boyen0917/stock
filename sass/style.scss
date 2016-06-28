@@ -12,7 +12,6 @@ $titleBg2: rgb(245,245,245);
 $size2: 18px;
 $qdBlock2: #efefef;
 $qdTitleBDR2: 1px solid #bbb;
-
 $pageHeaderColor2: #555;
 
 
@@ -50,6 +49,22 @@ $pageHeaderColor2: #555;
     background: $bgColor;
 }
 
+@mixin mixinAppearanceNone() {
+	-webkit-appearance: none;
+       -moz-appearance: none;
+        -ms-appearance: none;
+            appearance: none;
+}
+
+@mixin qdERadio($content) {
+	content: $content;
+    font-size: 15px;
+    margin-left: -15px;
+    position: absolute;
+    top: 12px;
+    left: 50%;
+}
+
 
 
 $general: $general2;
@@ -60,6 +75,7 @@ $qdBlock: $qdBlock2;
 $qdTitleBDR: $qdTitleBDR2;
 $pageHeaderColor: $pageHeaderColor2;
 
+$markBlue: #1c85cd;
 
 #stock-ui {
 
@@ -90,6 +106,33 @@ $pageHeaderColor: $pageHeaderColor2;
 		z-index: 0;
 		background: $general;
 		display: none;
+
+		&.slide-ready {
+		    position: absolute;
+		    display: block;
+		    z-index: 20;
+		}
+
+		&.slide {
+			transition: 0.5s;
+			// &:before {
+			// 	content: " ";
+			//     position: absolute;
+			//     right: 100%;
+			//     top: 0;
+			//     width: 100vw;
+			//     height: 100vh;
+			// }
+
+			// &:after {
+			// 	content: " ";
+			//     position: absolute;
+			//     left: 100%;
+			//     top: 0;
+			//     width: 100vw;
+			//     height: 100vh;
+			// }
+		}
 	}
 
 	section[data-role=page].active {
@@ -99,7 +142,7 @@ $pageHeaderColor: $pageHeaderColor2;
 		display: block;
 	}
 
-	[data-role=row] {
+	section[data-role=row] {
 		width: 100%;
     	display: block;
 	    overflow: auto;
@@ -109,6 +152,10 @@ $pageHeaderColor: $pageHeaderColor2;
 			bottom: 0;
 		}
 	}
+
+
+	.rise { background: red; overflow: hidden; color: white;}
+	.fall { background: #1F7425; color: white;}
 
 
 	> .content {
@@ -125,6 +172,7 @@ $pageHeaderColor: $pageHeaderColor2;
 	    text-align: center;
         height: 50px;
     	box-sizing: border-box;
+		margin-bottom: 1px;
 
 		button.left {
 			@include headerBtn();
@@ -201,45 +249,25 @@ $pageHeaderColor: $pageHeaderColor2;
 		    border-radius: 20px;
 		}
 
-		> div { display: inline-block; }
+		> div { 
+			display: inline-block; 
+			margin-top: 4px;
+    		font-size: 18px;
+		}
 	}
 
-	#page-quoteList {
+	#uiMask {
+		position:absolute;
+		top:0;
+		left:0;
+		width:100vw;
+		height:100vh;
+		z-index: 11;
+	}
 
-		section.search {
-			width: 100%;
-			padding: 10px 0;
-			background: $titleBg;
-
-			span { vertical-align: top; height: 29px;}
-
-			span.input { 
-				width: 75%;
-
-				input { 
-					display: block;
-					background: $general;
-					width: 90%; 
-					height: 100%;
-					margin: auto;
-					font-size: 15px;
-					padding-left: 10px;
-					color: $color;
-				} 
-			}
-
-			span.button { 
-				width: 20%;
-				button {
-					display: block;
-					font-size: $size1;
-					margin: auto;
-				}
-			}
-		}
+	#quoteList {
 
 		section.stock-table {
-			margin-top: 1px;
 			table {
 				width: 100%;
 				border-spacing: 0;
@@ -268,14 +296,51 @@ $pageHeaderColor: $pageHeaderColor2;
 				}
 
 				td div.change { padding: 5px; max-width: 100px; margin: auto;}
-				td div.rise { background: red; overflow: hidden; color: white;}
-				td div.fall { background: #1F7425; color: white;}
+				// td div.rise { background: red; overflow: hidden; color: white;}
+				// td div.fall { background: #1F7425; color: white;}
 			}
 		} /* section.stock-table */
 	}
 
-	#page-quoteDetail {
+	#quoteSearch {
+		section.search {
+			width: 100%;
+			padding: 10px 0;
+			background: $titleBg;
 
+			span { vertical-align: top; height: 29px;}
+
+			span.input { 
+				width: 100%;
+				max-width: 600px;
+				display: block;
+				margin: auto;
+			
+				input { 
+					display: block;
+					background: $general;
+					width: 90%; 
+					height: 100%;
+					margin: auto;
+					font-size: 15px;
+					padding-left: 10px;
+					color: $color;
+				} 
+			}
+
+			// span.button { 
+			// 	width: 20%;
+			// 	button {
+			// 		display: block;
+			// 		font-size: $size1;
+			// 		margin: auto;
+			// 	}
+			// }
+		}
+	}
+
+	#quoteDetail {
+		> [data-role=row] { width: 98%; margin: auto;}
 	}
 
 	#qdA {
@@ -350,15 +415,99 @@ $pageHeaderColor: $pageHeaderColor2;
 
 	#qdD {
 		height: 50px;
-		> span {
-			width: 50%;
-		    background: $qdBlock;
+		margin: 10px 0;
+
+		> input[type=radio] {
+			position: relative;
+			margin: 0;
 		    border: $qdTitleBDR;
-		    text-align: center;
-		    height: 100%;
-		    line-height: 50px;
+		    -webkit-appearance: none;
+		    width: 16.66%;
+		    height: 45px;
 		    cursor: pointer;
+		    @include mixinAppearanceNone();
+
+		    &:first-child:before { @include qdERadio("分時") }
+		    &:nth-child(2):before { @include qdERadio("日Ｋ") }
+		    &:nth-child(3):before { @include qdERadio("週Ｋ") }
+		    &:nth-child(4):before { @include qdERadio("月Ｋ") }
+		    &:nth-child(5):before { @include qdERadio("５分") }
+		    &:last-child:before { @include qdERadio("60分") }
+		}
+
+		> input[type=radio]:checked { background: #e2eeff }
+	}
+
+	#qdE {
+		> div {
+			height: 28px;
+		    line-height: 28px;
+		    text-align: left;
+		    font-size: 13px;
+		    width: 90%;
+		    margin: auto;
+		}
+
+		> div:first-child { 
+			margin-left: 10px;
+		    font-size: 16px;
+    		color: $markBlue;
+		}
+
+		> div:nth-child(2) > span:first-child { font-size: 20px; }
+
+		> div:nth-child(2) > span { width: 25%; }
+		> div:nth-child(3) > span { width: 25%; }
+		> div:nth-child(3) > span:first-child > span:first-child { margin-right: 10px; }
+		> div:last-child > span { width: 33%; }
+
+	}
+
+	#stockMenu {
+		padding: 0 5px;
+		.sm-block {
+			height: 30px;
+			width: 100%;
+			border: $qdTitleBDR;
+			margin: 0 auto 20px;
+			text-align: center;
+			line-height: 30px;
+			cursor: pointer;
+			box-sizing: border-box;
+		}
+	}
+
+	#smA {
+		> div:first-child {
+			background: $titleBg;
+			
+    		height: 40px;
+    		margin-bottom: 10px;
+
+    		img {
+    			border-radius: 10px;
+			    height: 30px;
+			    position: relative;
+			    top: 5px;
+			    left: 10px;
+    		}
+
+    		span { position: relative; bottom: 5px; left: 20px;}
+		}
+	}
+
+	#smB {
+		margin-top: 10px;
+		> div > span {
+			width: 25%;
+		    float: left;
+		    text-align: center;
 		    box-sizing: border-box;
+		    border: $qdTitleBDR;
+		    height: 30px;
+		    line-height: 30px;
+		    cursor: pointer;
+		    font-size: 15px;
 		}
 	}
 

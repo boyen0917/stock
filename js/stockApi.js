@@ -28,8 +28,7 @@
 		// api list
 
 		self.quote = function(optionObj,cb){
-
-			new MyAjax({
+			self.api({
 				apiName: "v2/quote",
 				symbol: optionObj.symbol,
 				callback: cb
@@ -37,29 +36,26 @@
 		};
 
 		self.cateranking = function(optionObj,cb){
-			new MyAjax({
+			self.api({
 				apiName: "v2/cateranking",
 				symbol: optionObj.symbol,
-				serverIpArr: serverIpArr,
 				callback: cb
 			});
 		};
 
 		self.catequote = function(optionObj,cb){
-			new MyAjax({
+			self.api({
 				apiName: "v2/catequote",
 				symbol: optionObj.symbol,
-				serverIpArr: serverIpArr,
 				callback: cb
 			});
 		};
 
 		
 		self.quotentrd1 = function(optionObj,cb){
-			new MyAjax({
+			self.api({
 				apiName: "v2/quotentrd1",
 				symbol: optionObj.symbol,
-				serverIpArr: serverIpArr,
 				callback: cb
 			});
 		};
@@ -67,11 +63,18 @@
 
 		self.search = function(optionObj,cb){
 			console.log("optionObj.param=>"+optionObj.param);
-			new MyAjax({
+			self.api({
 				apiName: "v1/search",
 				symbol:null,
 				param: optionObj.param,
-				serverIpArr: serverIpArr,
+				callback: cb
+			});
+		};
+
+		self.monthk = function(optionObj,cb){
+			self.api({
+				apiName: "v2/monthk",
+				symbol: optionObj.symbol,
 				callback: cb
 			});
 		};
@@ -81,14 +84,23 @@
 
 	StockApi.prototype = {
 
-		init: function() {
+		api: function(args){
+			var self = this,
+				deferred = self.deferred();
 
-			if(typeof StockUI !== "undefined") {
-				new StockUI();
-			}
+			new MyAjax(args).done(function(rspObj) {
+				
+				rspObj.apiData = self.toArray(args.apiName, rspObj.data.responseText);
+				rspObj.args = args;
+				
+				if(typeof args.callback === "function") args.callback(rspObj);
+
+				deferred.resolve(rspObj);
+			});
+
+			return deferred;
 
 		},
-
 
 		getServerListIpArr: function(){
 			return ServerList.sites.map(function(item){
@@ -124,24 +136,36 @@
 			}
 			return isPrice;
 		},
-		getItemsName:function(apiName,segments){
+		getItemsFormatArr: function(apiName,segments){
+			var itemObj = {};
+			switch(apiName) {
+				case caseMatch("v2/quote,v2/cateranking,v2/catequote"):
 
-			var names=[];
+					return [
+						["status",		false,false],	["symbol",			false,false],	["name",			false,false],	["datetime",	true ,true ],	["pinyin",		false,false],				
+						["market",		false,false],	["subtype",			false,false],	["lastPrice",		true ,true ],	["highPrice",	true ,true ],	["lowPrice",	true ,true ],		
+						["openPrice",	true ,true ],	["preClosePrice",	true ,true ],	["changeRate",		true ,true ],	["volume",		true ,true ],	["nowVolume",	true ,true ],		
+						["turnoverRate",true ,true ],	["limitUp",			true ,true ],	["limitDown",		true ,true ],	["averageValue",true ,true ],	["change",		true ,true ],
+						["amount",		true ,true ],	["volumeRatio",		false,false],	["buyPrice",		true ,true ],	["sellPrice",	true ,true ],	["buyVolume",	true ,true ],			
+						["sellVolume",	true ,true ],	["totalValue",		true ,true ],	["flowValue",		true ,true ],	["netAsset",	false,false],	["pe",			true ,true ],				
+						["roe",			true ,true ],	["captitalization",	true ,true ],	["circulatingShare",true ,true ],	["buyPrices",	true ,true ],	["sellPrices",	true ,true ],		
+						["buyVolumes",	true ,true ],	["sellVolumes",		true ,true ],	["amplitudeRate",	false,false],	["receipts",	false,false]
+					]; //30-39};;
 
-			if(apiName=="v2/quote" || apiName=="v2/cateranking" || apiName=="v2/catequote"){
-				names=["status","symbol","name","datetime","pinyin","market",
-				"subtype","lastPrice","highPrice","lowPrice","openPrice",
-				"preClosePrice","changeRate","volume","nowVolume","turnoverRate",
-				"limitUp","limitDown","averageValue","change","amount",
-				"volumeRatio","buyPrice","sellPrice","buyVolume","sellVolume",
-				"totalValue","flowValue","netAsset","pe","roe",
-				"captitalization","circulatingShare","buyPrices","sellPrices","buyVolumes",
-				"sellVolumes","amplitudeRate","receipts"]; //30-39};
+					break;
+				case caseMatch("v1/search,v2/search"):
+					return ["symbol","name","pinyin","type","f"];
+					break;
+
+				case "v2/monthk":
+					// 日期[2]时间[2]开[2]高[2]低[2]收[2]量[2]参考价[3]
+					return ["date","time","ko","ke","kq","kc","volume","prefPrice"];
+					break;
 			}
-			if(apiName=="v1/search"){
-				names=["symbol","name","pinyin","type","f"];
+
+			function caseMatch(apiStr) {
+				 return apiStr.split(",")[apiStr.split(",").indexOf(apiName)];
 			}
-			return names;
 		},
 
 		toArray: function(apiName,oriStr){
@@ -149,11 +173,15 @@
 			var segments=oriStr.split('\u0004');
 
 			for(var i=0;i<segments.length;i++){
-				var rows=segments[i].split('\u0003');
-				var rowsArr=[];
-				var names=this.getItemsName(apiName,i);
-				var isDecode=this.getItemsDecode(apiName,i);
-				var isPrice=this.getItemsPrice(apiName,i);
+				var rows 		= segments[i].split('\u0003'),
+					rowsArr		= [],
+				// var names=this.getItemsName(apiName,i);
+				// var isDecode=this.getItemsDecode(apiName,i);
+				// var isPrice=this.getItemsPrice(apiName,i);
+					itemFormat 	= this.getItemsFormatArr(apiName,i),
+					names 		= itemFormat instanceof Array ? itemFormat[0] : itemFormat,
+					isDecode	= itemFormat instanceof Array ? itemFormat[1] : false,
+					isPrice 	= itemFormat instanceof Array ? itemFormat[2] : false;
 				
 				for(var j=0;j<rows.length;j++){
 					var items=rows[j].split('\u0002');
