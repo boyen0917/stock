@@ -1,11 +1,10 @@
-(function(name,definition){
+(function(name, definition){
 	
 	window[name] = definition();
 
 	window.onload = function(){
 
 		window.ui = new window[name]("stock-ui");
-		window.qq = 123;
 	}
 	
 }("StockUI", function() {
@@ -17,16 +16,37 @@
 
 		self.stockId = "stock-ui";
 
-		self.defaultSymbol = "000001.sh,399001.sz,00001.hk,00379.hk,00145.hk,00552.hk";
+		self.defaultSymbol = "000001.sh,399001.sz,600000.sh";
 
 		self.stockApi = new StockApi();
 
 		self.stockView = new StockView();
 
-		self.homePageId = "quoteList";
+		self.deferred = self.stockApi.deferred;
 
-		self.historyPath = [{ pageId: self.homePageId}];
+		// 首頁 暫時關閉 a = []
+		self.indexPageObj = (function(a) {
+			var a = [];
+		    var indexPageObj = (a || []).reduce(function(obj, curr) {
+		    	var p = curr.split('=', 2);
+		        obj[p[0]] = decodeURIComponent((p[1]|| "").replace(/\+/g, " "));
+		    	return obj;
+		    }, {});
+		    // "quoteList";
+		    if(indexPageObj.pageId === undefined) indexPageObj.pageId = "quoteList";
+		    return indexPageObj;
+		})(window.location.search.substr(1).split('&'));
 
+		// 初始化 上一頁路徑
+		self.historyPath = function() {
+			var arr = [];
+			if(self.indexPageObj.back !== undefined)
+				arr.push({ pageId: self.indexPageObj.back})
+
+			arr.push({ pageId: self.indexPageObj.pageId});
+			return arr;
+		}();
+		
 		self.init();
 
 		// 第一步就是朝所有event 都在這裡 其他的都是customEvent
@@ -36,7 +56,6 @@
 			var closureObj = {};
 			return function(event) {
 				// 判斷event target 是否存在map中
-				console.log("vev",event);
 				if(event.currentTarget.viewId === undefined) return;
 				var viewId = event.currentTarget.viewId;
 				//禁止連點
@@ -62,13 +81,16 @@
 
 							case "qlA_menuBtn":
 
-								self.pageInitial({pageId: "stockMenu", noPageHeader: true});
-
-								self.slidePage({
-									pageId: "stockMenu",
-									direction: "left",
-									percent: "75%",
-								})
+								self.pageInitial({
+									pageId: "stockMenu", 
+									noPageHeader: true
+								}).then(function() {
+									self.slidePage({
+										pageId: "stockMenu",
+										direction: "left",
+										percent: "75%"
+									})
+								});
 
 								break;
 
@@ -88,7 +110,12 @@
 
 							default:
 								if(viewId.indexOf("quote_") === 0) {
-									showQuoteDetail(viewId);
+									// window.location = "index.html?pageId=quoteDetail&back=quoteList&chartName=dayk&symbol=" + viewId.split("_")[1];
+									self.showQuoteDetail(self.stockView.map[viewId].data);
+
+								} else if(viewId.indexOf("qdDradio_") === 0) {
+									var symbol = self.stockView.map.quoteDetail.data.body.symbol;
+									// window.location = "index.html?pageId=quoteDetail&back=quoteList&symbol=" + symbol + "&chartName=" + viewId.split("_")[1];
 								}
 
 						}
@@ -123,37 +150,30 @@
 		}();
 
 
-		function qsASubmit() {
+		self.qsASubmit = function() {
 			getQuoteListView.call(self);
 		};
 
-		function showQuoteDetail(fromViewId) {
-			var pageId = "quoteDetail",
-				fromViewIdObj = self.stockView.map[fromViewId];
+		self.showQuoteDetail = function(quoteData) {
+			var pageId = "quoteDetail";
 
-			self.pageInitial({pageId: pageId, data: fromViewIdObj.data});
-
-			// page title
-			self.stockView.map["page-header-quoteDetail"].data = 
-				'<div style="position:relative;bottom:5px">' + 
-					'<div style="font-size:16px;">' + fromViewIdObj.data.name + '</div>' +
-					'<div style="font-size:12px;">' + fromViewIdObj.data.symbol + '</div></div>';
-			self.stockView.map["page-header-quoteDetail"].render();
-
-			// content
+			self.pageInitial({pageId: pageId, data: {
+				title: getQuoteDetailTitle(quoteData),
+				body: quoteData
+			}});
 
 			self.changePage(pageId);
 		};
 
-		function showQuoteSearch(fromViewId) {
+		self.showQuoteSearch = function(fromViewId) {
 			var pageId = "quoteSearch",
 				fromViewIdObj = self.stockView.map[fromViewId];
 
 			self.pageInitial({pageId: pageId, data: fromViewIdObj.data});
 
 			// page title
-			self.stockView.map["page-header-quoteSearch"].data = '<div>' + fromViewIdObj.data.name + '</div><div style="font-size:12px;">' + fromViewIdObj.data.symbol + '</div>';
-			self.stockView.map["page-header-quoteSearch"].render();
+			// self.stockView.map["page-header-quoteSearch"].data = '<div>' + fromViewIdObj.data.name + '</div><div style="font-size:12px;">' + fromViewIdObj.data.symbol + '</div>';
+			// self.stockView.map["page-header-quoteSearch"].render();
 
 			// content
 
@@ -198,9 +218,9 @@
 			});
 
 			// 首頁
-			self.pageInitial({pageId: self.homePageId, noPageHeader: true});
+			self.pageInitial({pageId: self.indexPageObj.pageId, noPageHeader: self.indexPageObj.back ? false : true});
 
-			document.getElementById(self.homePageId).addClass("active");
+			document.getElementById(self.indexPageObj.pageId).addClass("active");
 			
 		},
 
@@ -209,9 +229,8 @@
 			return function(argObj) {
 				var self = this;
 				if(argObj.back === true) {
-					console.log("slide back~");
 					var slidePage = document.querySelectorAll("section[data-role=page].slide")[0];
-					slidePage.style = "width: " + closureObj.percent + ";" + closureObj.direction + ": -100%"
+					slidePage.setAttribute("style","width: " + closureObj.percent + ";" + closureObj.direction + ": -100%");
 
 					closureObj = {};
 					setTimeout(function() {
@@ -232,25 +251,34 @@
 				closureObj = argObj;
 
 				var elem = self.stockView.map[argObj.pageId].elem;
-				elem.style = "width: " + argObj.percent + ";" + argObj.direction + ": -100%"
+				elem.setAttribute("style","width: " + argObj.percent + ";" + argObj.direction + ": -100%");
 				elem.addClass("slide-ready");
 
 				setTimeout(function() {
 					elem.addClass("slide");
-					elem.style = "width: " + argObj.percent + ";" + argObj.direction + ": 0";
+					elem.setAttribute("style","width: " + argObj.percent + ";" + argObj.direction + ": 0");
 				},100)
 
    			}
 		}(),
 
 		eventShowPage: function(argObj) {
-			this.pageInitial({pageId: argObj.pageId, data: argObj.data});
-			// page title
-			this.stockView.map["page-header-" + argObj.pageId].data = argObj.title;
-			this.stockView.map["page-header-" + argObj.pageId].render();
+			var self = this;
+			self.pageInitial({
+				pageId: argObj.pageId, 
+				data: {
+					title: argObj.title,
+					body: argObj.data
+				}
+			}).then(function(){
+				self.changePage(argObj.pageId);	
+			});
+			// // page title
+			// this.stockView.map["page-header-" + argObj.pageId].data = argObj.title;
+			// this.stockView.map["page-header-" + argObj.pageId].render();
 
-			if(argObj.init instanceof Function) argObj.init();
-			this.changePage(argObj.pageId);
+			// if(argObj.init instanceof Function) argObj.init();
+			
 		},
 
 		maskReset: function(argObj) {
@@ -286,63 +314,68 @@
 			// pageId,data, noPageHeader
 			var self = this,
 				pageId = initObj.pageId,
-				pageElem = document.getElementById(pageId);
+				pageElem = document.getElementById(pageId),
+				pageViewObj = self.stockView.pageComponentMap[pageId],
+				pageInitdef = self.deferred(),
+				allDoneDef = self.deferred();
 
-			// if(initObj.reset === undefined) {
-			// 	var parentNode = pageElem.parentNode;
-			// 	parentNode.removeChild(pageElem);
+			if(initObj.data === undefined && pageViewObj.pageInit instanceof Function)
+				pageViewObj.pageInit.call(self).then(pageInitdef.resolve);
+			else 
+				pageInitdef.resolve(initObj.data);
 
-			// 	parentNode.appendChild(self.oriElem.querySelectorAll("#"+pageId)[0])
-			// 	delete self.stockView.map[pageId];
+			pageInitdef.then(function(pageInitData) {
+				if(self.stockView.map.hasOwnProperty(pageId) === false){
+					self.stockView.assign({
+						viewId: pageId,
+						elem: pageElem,
+						render: function() {
 
-			// 	pageElem = document.getElementById(pageId);
-			// }
-
-			if(self.stockView.map.hasOwnProperty(pageId) === false){
-				self.stockView.assign({
-					viewId: pageId,
-					elem: pageElem,
-					render: function() {
-						console.log();
-						if(self.stockView.pageComponentMap[pageId].pageInit instanceof Function) 
-							self.stockView.pageComponentMap[pageId].pageInit.call(self);
-
-						// 該頁面的成員 去畫面中尋找 並進行初始化
-						Object.keys(self.stockView.pageComponentMap[pageId]).forEach(function(cpntId) {
-							var cpntObj = self.stockView.pageComponentMap[pageId][cpntId],
-								viewObj = self.stockView.map[cpntId];
-
-							if(document.getElementById(cpntId) === null) return;
-
-							if(self.stockView.map[cpntId] === undefined) {
-								// 寫入component html
-								document.getElementById(cpntId).innerHTML = cpntObj.html();
-
-								self.stockView.assign({
-									viewId: cpntId,
-									elem: document.getElementById(cpntId),
-									init: cpntObj.init.bind(self)
-								});
+							// title initial
+							if(initObj.noPageHeader !== true) {
+								self.prependPageHeader({
+									pageId: pageId,
+									title: self.stockView.map[pageId].data.title
+								});	
 							}
+							// 該頁面的成員 去畫面中尋找 並進行初始化
+							Object.keys(self.stockView.pageComponentMap[pageId]).forEach(function(cpntId) {
+								var cpntObj = self.stockView.pageComponentMap[pageId][cpntId],
+									viewObj = self.stockView.map[cpntId];
 
-							if(self.stockView.map[cpntId].render instanceof Function) self.stockView.map[cpntId].render();
-						})
-					}
-				});
-			}
+								if(document.getElementById(cpntId) === null) return;
 
-			self.stockView.map[pageId].data = initObj.data,
-			self.stockView.map[pageId].render();
+								if(self.stockView.map[cpntId] === undefined) {
+									// 寫入component html
+									document.getElementById(cpntId).innerHTML = cpntObj.html();
+									self.stockView.assign({
+										viewId: cpntId,
+										elem: document.getElementById(cpntId),
+										init: cpntObj.init.bind(self)
+									});
+								}
 
-			// 非首頁 
-			if(initObj.noPageHeader === undefined) self.prependPageHeader(pageId);
+								if(self.stockView.map[cpntId].render instanceof Function) self.stockView.map[cpntId].render();
+							})
+						}
+					});
+				}
+
+				if(pageInitData !== undefined) self.stockView.map[pageId].data = pageInitData;
+				self.stockView.map[pageId].render();
+
+				allDoneDef.resolve();
+			});
+
+			return allDoneDef;
 		},
 
-		prependPageHeader: function(pageId) {
+
+		prependPageHeader: function(argObj) {
 			var self = this,
-				pageElem = document.getElementById(pageId),
+				pageElem = document.getElementById(argObj.pageId),
 				pageHeaderElem = pageElem.getElementsByClassName('page-header')[0],
-				viewId = "page-header-" + pageId;//.split("-")[1];
+				viewId = "page-header-" + argObj.pageId;//.split("-")[1];
 
 			if(pageHeaderElem === undefined) {
 
@@ -359,43 +392,45 @@
 						})
 					},
 					render: function(elem) {
+						if(document.getElementById("quoteDetail").firstElementChild !== elem)
+							pageElem.insertBefore(self.stockView.map[viewId].elem, document.getElementById(argObj.pageId).firstChild);
+								
 						elem.getElementsByTagName('div')[0].innerHTML = self.stockView.map[viewId].data;
 					}
 				});
-
-				// 只insert 1次 所以寫在外面
-				pageElem.insertBefore(self.stockView.map[viewId].elem, document.getElementById(pageId).firstChild);
 			}
+
+			self.stockView.map[viewId].data = argObj.title;
+			self.stockView.map[viewId].render();
 		},
  
 		changePage: function(pageId,isBack) {
-			var self = this;
+			var self = this,
+				direction = (isBack || false) ? "prev" : "next";
 
-			var direction = (isBack || false) ? "prev" : "next",
-				nextPage = self.stockView.map[pageId].elem,
-				deferred = self.stockApi.deferred(),
-				oriPage = document.querySelectorAll("section[data-role=page].active")[0];
+			// 可能不存在上一頁
+			// self.pageInitial({pageId: pageId, noPageHeader: true}).then(function() {
 
-			oriPage.addClass("back").removeClass("active");
-			nextPage.addClass(direction);
+				var nextPage = self.stockView.map[pageId].elem,
+					oriPage = document.querySelectorAll("section[data-role=page].active")[0];
 
-			setTimeout(function(){
-				nextPage
-				.addClass("active")
-				.removeClass(direction);
+				oriPage.addClass("back").removeClass("active");
+				nextPage.addClass(direction);
 
-				nextPage.style.transition = "0.5s";
+				setTimeout(function(){
+					nextPage
+					.addClass("active")
+					.removeClass(direction)
+					.style.transition = "0.5s";
 
-				// 動畫結束再刪掉
-				setTimeout(function () {
-					oriPage.removeClass.call(oriPage, "back");
-					nextPage.style.transition = "";
-				}, 600)
-				if(isBack !== true) self.historyPath.push({ pageId: pageId})
-			},50);
-			
-
-			return deferred;
+					// 動畫結束再刪掉
+					setTimeout(function () {
+						oriPage.removeClass.call(oriPage, "back");
+						nextPage.style.transition = "";
+					}, 600)
+					if(isBack !== true) self.historyPath.push({ pageId: pageId})
+				},50);
+			// });
 		}
 	};
 
@@ -410,13 +445,9 @@
 
 		pageComponentMap: {
 			stockMenu: {
-				pageInit: function() {
-					// this.stockView.map.stockMenu.elem.querySelectorAll(".slide:after").addEventListener("click",this);
-				},
-
 				smA: {
 					html: function() {
-						return '<div><img src="img/qmi.png"><span>三竹財富網</span></div>';
+						return '<div><img src="img/qmi.png"><span>水晶股市</span></div>';
 					},
 					init: function() {
 
@@ -495,7 +526,7 @@
 							}
 						});
 
-						// 去搜尋頁
+						// 去菜單
 						self.stockView.assign({
 							viewId: "qlA_menuBtn",
 							elem: viewObj.querySelectorAll(".menu")[0],
@@ -538,20 +569,39 @@
 								thisElem.addEventListener("input",self);
 							}
 						})
-
-						// 送出event
-						// self.stockView.assign({
-						// 	viewId: "qsA_submit",
-						// 	elem: viewObj.getElementsByTagName("button")[0],
-						// 	eventBinding: function(thisElem) {
-						// 		thisElem.addEventListener("click",self);
-						// 	}
-						// })
 					}					
 				}
 			},
 
 			quoteDetail: {
+				pageInit: function() {
+					var self = this,
+						deferred = self.stockApi.deferred(),
+						viewObj = self.stockView.map.quoteDetail;
+
+					// 是否為首頁
+					if(self.indexPageObj.pageId === "quoteDetail" && self.indexPageObj.symbol !== undefined) {
+
+						// 先做上一頁
+						self.pageInitial({pageId: self.indexPageObj.back, noPageHeader: true});
+
+						self.stockApi.quote({
+							symbol: self.indexPageObj.symbol
+						},function(rspObj){
+							var quoteData = rspObj.apiData[0];
+							deferred.resolve({
+								title: getQuoteDetailTitle(quoteData),
+								body: quoteData
+							});
+						});
+					} else {
+						deferred.resolve();
+					}
+
+					return deferred;
+					// this.stockView.map.stockMenu.elem.querySelectorAll(".slide:after").addEventListener("click",this);
+				},
+
 				qdA: {
 					html: function() {
 						return '<section class="title">' +
@@ -565,9 +615,9 @@
 					init: function() {
 						var self = this, // this => bind stockUI
 							viewObj = self.stockView.map.qdA;
-
+						
 						viewObj.render = function() {
-							var qdData = self.stockView.map["quoteDetail"].data;
+							var qdData = self.stockView.map["quoteDetail"].data.quoteData;
 
 							if(Object.keys(qdData).length > 0) {
 								viewObj.elem.querySelectorAll("[name]").forEach(function(thisElem) {
@@ -581,19 +631,86 @@
 
 				qdB: {
 					html: function() {
-						return '<div id="chart_div" class="k-chart"></div>'
+						return '<div id="chart_div" class="k-chart"><canvas id="chartCanvas" width="600" height="400" style="z-index: 100000; background: transparent;border: 1px solid #69c"></canvas></div>'
 					},
 					init: function() {
-						var self = this; // this => bind stockUI
+						var self = this,
+							qdData = self.stockView.map["quoteDetail"].data.body,
+							viewObj = self.stockView.map.qdB;
 
-						self.stockApi.monthk({
-							symbol: "000001.sh"
-						},function(data) {
-							console.log("data",data);
-						})
+							// 預設線圖 月k
+							// chartName = qdData.chartName || "monthk";
+
+						viewObj.render = function() {return;
+							var chartName = self.indexPageObj.chartName;
+							viewObj.elem.innerHTML = "";
+
+							self.stockApi[chartName]({
+								symbol: qdData.symbol
+							},function(rspObj) {
+								console.log("rspObj",rspObj);
+								if(rspObj.isSuccess !== true) {
+									throw "error";
+									return;
+								}
+
+								var drawName = chartName,
+									options = {}, dataArr, packages,
+									lengh = rspObj.apiData.length,
+									sliceArr = rspObj.apiData.slice((lengh > 20 ? lengh - 20 : 0));
+
+								switch(chartName) {
+									case caseMatch(self.stockApi.caseK.split("v2/").join("")):
+										drawName = "k";
+
+										dataArr = sliceArr.map(function(item) {
+											// google [ date, low, open, last, high ],
+											return [item.date.toString(), item.low, item.open, item.last, item.high] ;
+										});
+
+										options = {
+											legend: 'none',
+											// vAxis: {
+											// 	textPosition: 'in'
+											// },
+											bar: { groupWidth: '15px' }, // Remove space between bars.
+											candlestick: {
+										    	fallingColor: { strokeWidth: 0, fill: 'green' }, // red
+										    	risingColor: { strokeWidth: 0, fill: 'red' }   // green
+											}
+										}
+
+										packages = ['corechart'];
+
+										break;
+									case "line":
+										dataArr = sliceArr.map(function(item) {
+											// line [ time, price, price ],
+											var t = (item.time || "").toString().substring(8).split("");
+											return [t[0]+t[1]+":"+t[2]+t[3], item.lastPrice, item.avgPrice] ;
+										});
+										dataArr.pop();
+										packages = ['corechart', 'line'];
+										console.log("dataArr",dataArr);
+										break;
+								}
+
+								chartDrawObj[drawName]({
+									elem: viewObj.elem,
+									dataArr: dataArr,
+									options: options,
+									packages: packages
+								});
+
+								
+							});
+
+							function caseMatch(str) {
+								 return str.split(",")[str.split(",").indexOf(chartName)];
+							}
+						};
+							
 						
-						// google.charts.load('current', {'packages':['corechart']});
-						// google.charts.setOnLoadCallback(drawChart);
 					}					
 				},
 
@@ -609,15 +726,40 @@
 						'</section>';
 					},
 					init: function() {
-						
+
 					}					
 				},
 
 				qdD: {
 					html: function() {
-						return '<input name="k-cate" type="radio"><input name="k-cate" type="radio"><input name="k-cate" type="radio"><input name="k-cate" type="radio"><input name="k-cate" type="radio"><input name="k-cate" type="radio">';
+						return '<input data-name="line" name="k-cate" type="radio">' +
+						// '<input data-name="m5" name="k-cate" type="radio">' +
+						'<input data-name="m30" name="k-cate" type="radio">' +
+						'<input data-name="m60" name="k-cate" type="radio">' +
+						// '<input data-name="m120" name="k-cate" type="radio">' +
+						'<input data-name="dayk" name="k-cate" type="radio">' +
+						'<input data-name="weekk" name="k-cate" type="radio">' +
+						'<input data-name="monthk" name="k-cate" type="radio">';
 					},
 					init: function() {
+						var self = this,
+							qdData = self.stockView.map["quoteDetail"].data.body,
+							viewObj = self.stockView.map.qdC;
+
+							// 預設線圖 月k
+							// chartName = qdData.chartName || "monthk";
+
+						Array.prototype.forEach.call(self.stockView.map.qdD.elem.getElementsByTagName("input"),function(elem,i) {
+							if(elem.dataset.name === self.indexPageObj.chartName) elem.checked = true;
+							self.stockView.assign({
+								viewId: "qdDradio_" + elem.dataset.name,
+								elem: elem,
+								eventBinding: function(elem) {
+									elem.addEventListener("click",self);
+								},
+							});
+						});
+
 						
 					}					
 				},
@@ -632,22 +774,22 @@
 						'<div><span><span name="volumeRatio"></span><span><span name="amplitudeRate"></span><span>%</span></span></span>' + 
 						'	<span><span>低:</span><span name="lowPrice"></span></span>' + 
 						'	<span><span>換:</span><span name="change"></span></span>' + 
-						'	<span><span>額:</span><span><span name="amount"></span>萬</span></span></div>' +
-						'<div><span><span>上漲家數：</span><span name="">44</span></span>' + 
-						'	<span><span>平盤家數：</span><span name="">55</span></span>' + 
-						'	<span><span>下跌家數：</span><span name="">66</span></span></div>'
+						'	<span><span>額:</span><span><span name="amount"></span>萬</span></span></div>'
+						// '<div><span><span>上漲家數：</span><span name="">44</span></span>' + 
+						// '	<span><span>平盤家數：</span><span name="">55</span></span>' + 
+						// '	<span><span>下跌家數：</span><span name="">66</span></span></div>'
 						;
 					},
 					init: function() {
 						var self = this, // this => bind stockUI
 							viewObj = self.stockView.map.qdE;
-
+						
 						viewObj.render = function() {
-							var qdData = self.stockView.map["quoteDetail"].data;
+							var qdData = self.stockView.map["quoteDetail"].data.body;
 							viewObj.elem.getElementsByTagName('div')[0].innerHTML = qdData.name + "(" + qdData.symbol + ")";
 
 							if(Object.keys(qdData).length > 0) {
-								viewObj.elem.querySelectorAll("[name]").forEach(function(thisElem) {
+								Array.prototype.forEach.call(viewObj.elem.querySelectorAll("[name]"), function(thisElem) {
 									// thisElem.addClass("red");
 									thisElem.innerHTML = qdData[thisElem.getAttribute("name")] || "";
 								});
@@ -752,12 +894,12 @@
 			self.stockApi.quote({
 				symbol: self.defaultSymbol
 			},function(rspObj){
-				console.log("quote",rspObj);
-				var dataArr = rspObj.apiData;
+				var dataArr = rspObj.apiData,
 					viewIdArr = [];
 
 				if(rspObj.isSuccess !== true) return;
 				
+
 				dataArr.forEach(function(stockObj) {
 					if(stockObj.status === "") return;
 
@@ -808,42 +950,62 @@
 			});
 
 		// return quoteInterval }(),3000); // end of setInterval
-	}
-
-
-	function drawChart(argObj) {
-		var argObj = {
-				dataArr: [
-					['操', 20, 28, 38, 45],
-					['Tue', 31, 38, 55, 66],
-					['Wed', 50, 55, 77, 80],
-					['Thu', 77, 77, 66, 50],
-					['Fri', 68, 66, 22, 15]
-				],
-				options: {
-					hAxis: {
-						textPosition: 'none'
-					},
-					bar: { groupWidth: '20px' }, // Remove space between bars.
-						candlestick: {
-					    	fallingColor: { strokeWidth: 0, fill: 'greed' }, // red
-					    	risingColor: { strokeWidth: 0, fill: 'red' }   // green
-						}
-					}
-			};
-
-		var data = google.visualization.arrayToDataTable(argObj.dataArr, true);
-		var chart = new google.visualization.CandlestickChart(argObj.elem);
-
-		chart.draw(data, options);
 	};
 
+	var chartDrawObj = {
+		k: function(argObj) {
+			google.charts.load('current', {packages: argObj.packages});
+			google.charts.setOnLoadCallback(function() {
+				var data = google.visualization.arrayToDataTable(argObj.dataArr, true);
+				var chart = new google.visualization.CandlestickChart(argObj.elem);
+				chart.draw(data, argObj.options);
+			});
+		},
+
+		line: function(argObj) {
+			google.charts.load('current', {packages: argObj.packages});
+			google.charts.setOnLoadCallback(function() {
+				var data = new google.visualization.DataTable();
+			    data.addColumn('string', 'time');
+			    data.addColumn('number', '成交');
+			    data.addColumn('number', '均價');
+
+			   //  argObj.dataArr = [
+			   //  [9, 40, 32],  [10, 32, 24], [11, 35, 27],
+      //   [12, 30, 22], [13, 40, 32], [14, 42, 34], [15, 47, 39], [16, 44, 36], [17, 48, 40],
+      //   [18, 52, 44], [19, 54, 46], [20, 42, 34], [21, 55, 47], [22, 56, 48], [23, 57, 49],
+      //   [24, 60, 52], [25, 50, 42], [26, 52, 44], [27, 51, 43], [28, 49, 41], [29, 53, 45],
+      //   [30, 55, 47], [31, 60, 52], [32, 61, 53], [33, 59, 51], [34, 62, 54], [35, 65, 57],
+      //   [36, 62, 54], [37, 58, 50], [38, 55, 47], [39, 61, 53], [40, 64, 56], [41, 65, 57],
+      //   [42, 63, 55], [43, 66, 58], [44, 67, 59], [45, 69, 61], [46, 69, 61], [47, 70, 62],
+      //   [48, 72, 64], [49, 68, 60], [50, 66, 58], [51, 65, 57], [52, 67, 59], [53, 70, 62],
+      //   [54, 71, 63], [55, 72, 64], [56, 73, 65], [57, 75, 67], [58, 70, 62], [59, 68, 60],
+      //   [60, 64, 56], [61, 60, 52], [62, 65, 57], [63, 67, 59], [64, 68, 60], [65, 69, 61],
+      //   [66, 70, 62], [67, 72, 64], [68, 75, 67], [69, 80, 72]
+      // ];
+      console.log("argObj.dataArr",argObj.dataArr);
+			    data.addRows(argObj.dataArr);
+
+			    var chart = new google.visualization.LineChart(argObj.elem);
+
+			    chart.draw(data, argObj.options);
+			});
+
+			    
+		}
+	}
 
 	function removeView() {
 		this.mapObj[this.viewId].elem.parentNode.removeChild(this.mapObj[this.viewId].elem);
 		delete this.mapObj[this.viewId];
 	};
 
+	// 設定quoteDetail標題
+	function getQuoteDetailTitle(quoteData) {
+		return '<div style="position:relative;bottom:5px">' + 
+		'<div style="font-size:16px;">' + quoteData.name + '</div>' +
+		'<div style="font-size:12px;">' + quoteData.symbol + '</div></div>';
+	}
 
 	// tool
 	Element.prototype.addClass = function(cn){

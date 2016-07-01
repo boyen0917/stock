@@ -25,6 +25,9 @@
 		// = "000001.sh,399001.sz,00001.hk"
 		var self = this;
 
+		// k線圖
+		self.caseK = "v2/m5,v2/m15,v2/m30,v2/m60,v2/m120,v2/dayk,v2/weekk,v2/monthk";
+
 		// api list
 
 		self.quote = function(optionObj,cb){
@@ -71,6 +74,62 @@
 			});
 		};
 
+		self.line = function(optionObj,cb){
+			self.api({
+				apiName: "v2/line",
+				symbol: optionObj.symbol,
+				callback: cb
+			});
+		};
+
+		self.m5 = function(optionObj,cb){
+			self.api({ // 5 15 30 60 120
+				apiName: "v2/m5",
+				symbol: optionObj.symbol,
+				callback: cb
+			});
+		};
+
+		self.m30 = function(optionObj,cb){
+			self.api({ // 5 15 30 60 120
+				apiName: "v2/m30",
+				symbol: optionObj.symbol,
+				callback: cb
+			});
+		};
+
+		self.m60 = function(optionObj,cb){
+			self.api({ // 5 15 30 60 120
+				apiName: "v2/m60",
+				symbol: optionObj.symbol,
+				callback: cb
+			});
+		};
+
+		self.m120 = function(optionObj,cb){
+			self.api({ // 5 15 30 60 120
+				apiName: "v2/m120",
+				symbol: optionObj.symbol,
+				callback: cb
+			});
+		};
+
+		self.dayk = function(optionObj,cb){
+			self.api({ // 5 15 30 60 120
+				apiName: "v2/dayk",
+				symbol: optionObj.symbol,
+				callback: cb
+			});
+		};
+
+		self.weekk = function(optionObj,cb){
+			self.api({
+				apiName: "v2/weekk",
+				symbol: optionObj.symbol,
+				callback: cb
+			});
+		};
+
 		self.monthk = function(optionObj,cb){
 			self.api({
 				apiName: "v2/monthk",
@@ -87,11 +146,12 @@
 		api: function(args){
 			var self = this,
 				deferred = self.deferred();
-
 			new MyAjax(args).done(function(rspObj) {
-				
-				rspObj.apiData = self.toArray(args.apiName, rspObj.data.responseText);
+
+				rspObj.apiData = self.toArray(args.apiName, rspObj.data.responseText, args.symbol);
 				rspObj.args = args;
+
+				if(rspObj.apiData.length==1) rspObj.apiData = rspObj.apiData[0];
 				
 				if(typeof args.callback === "function") args.callback(rspObj);
 
@@ -102,45 +162,11 @@
 
 		},
 
-		getServerListIpArr: function(){
-			return ServerList.sites.map(function(item){
-				return item.ip
-			});
-		},
-		getItemsDecode:function(apiName,segments){
-
-			var isDecode=[];
-
-			if(apiName=="v2/quote" || apiName=="v2/cateranking" || apiName=="v2/catequote"){
-				isDecode=[false,false,false,true,false,false,false,true,true,true,// 0-9
-				true,true,true,true,true,true,true,true,true,true, //10-19
-				true,false,true,true,true,true,true,true,false,true, //20-29
-				true,true,true,true,true,true,true,false,false,true]; //30-39};
-			}
-			if(apiName=="v1/search"){
-				isDecode=null;
-			}
-			return isDecode;
-		},
-		getItemsPrice:function(apiName,segments){
-			var isPrice=[];
-			if(apiName=="v2/quote" || apiName=="v2/cateranking" || apiName=="v2/catequote"){
-				//需修改
-				isPrice=[false,false,false,true,false,false,false,true,true,true,// 0-9
-				true,true,true,true,true,true,true,true,true,true, //10-19
-				true,false,true,true,true,true,true,true,false,true, //20-29
-				true,true,true,true,true,true,true,false,false,true]; //30-39};
-			}
-			if(apiName=="v1/search"){
-				isPrice=null;
-			}
-			return isPrice;
-		},
 		getItemsFormatArr: function(apiName,segments){
-			var itemObj = {};
+			var self = this, itemObj = {};
+			// return [name, isDecode, isPrice]
 			switch(apiName) {
 				case caseMatch("v2/quote,v2/cateranking,v2/catequote"):
-
 					return [
 						["status",		false,false],	["symbol",			false,false],	["name",			false,false],	["datetime",	true ,true ],	["pinyin",		false,false],				
 						["market",		false,false],	["subtype",			false,false],	["lastPrice",		true ,true ],	["highPrice",	true ,true ],	["lowPrice",	true ,true ],		
@@ -154,12 +180,17 @@
 
 					break;
 				case caseMatch("v1/search,v2/search"):
-					return ["symbol","name","pinyin","type","f"];
+					return [["symbol"],["name"],["pinyin"],["type"],["f"]];
 					break;
 
-				case "v2/monthk":
+				case caseMatch(self.caseK):
 					// 日期[2]时间[2]开[2]高[2]低[2]收[2]量[2]参考价[3]
-					return ["date","time","ko","ke","kq","kc","volume","prefPrice"];
+					return [["date", true, false],["time", true, false],["open", true, true],["high", true, true],["low", true, true],["last", true, true],["volume", true, false],["prefPrice", true, true]];
+					break;
+
+				case caseMatch("v2/line"):
+					// 最新价[2]成交量[2]时间[2]均价[3]
+					return [["lastPrice", true, true],["volume", true, true],["time", true, false],["avgPrice", true, true]];
 					break;
 			}
 
@@ -167,79 +198,36 @@
 				 return apiStr.split(",")[apiStr.split(",").indexOf(apiName)];
 			}
 		},
-
-		toArray: function(apiName,oriStr){
-			var arr=[];
-			var segments=oriStr.split('\u0004');
-
-			for(var i=0;i<segments.length;i++){
-				var rows 		= segments[i].split('\u0003'),
-					rowsArr		= [],
-				// var names=this.getItemsName(apiName,i);
-				// var isDecode=this.getItemsDecode(apiName,i);
-				// var isPrice=this.getItemsPrice(apiName,i);
-					itemFormat 	= this.getItemsFormatArr(apiName,i),
-					names 		= itemFormat instanceof Array ? itemFormat[0] : itemFormat,
-					isDecode	= itemFormat instanceof Array ? itemFormat[1] : false,
-					isPrice 	= itemFormat instanceof Array ? itemFormat[2] : false;
-				
-				for(var j=0;j<rows.length;j++){
-					var items=rows[j].split('\u0002');
-					
-					var itemsRename=[];
-					for(var k=0;k<items.length;k++){
-						
-						if(null!=isDecode && isDecode[k]){
-							items[k]=base93decodeString(items[k]);
+		toArray: function(apiName, oriStr, symbol){
+			var self = this;
+			return oriStr.split('\u0004').map(function(segments, i4) {
+				var formatArr = self.getItemsFormatArr(apiName,i4);
+				return segments.split('\u0003').map(function(rows, i3){
+					return rows.split('\u0002').reduce(function(obj, item, i2, oriArr) {
+						// 資料多過預期數量
+						if(formatArr[i2] === undefined) return obj;
+						// isDecode
+						if(formatArr[i2][1]) item = base93decodeString(item);
+						// isPrice
+						if(formatArr[i2][2]){
+							switch(apiName) {
+								case caseMatch("v2/quote,v2/cateranking,v2/catequote"):
+									item = priceStrFormat(item, oriArr[1]);
+								break;
+								case caseMatch(self.caseK):
+									item = priceStrFormat(item, symbol);
+								break;
+							}
 						}
-						if(null!=isPrice && isPrice[k]){
-							//需調整
-							items[k]=priceStrFormat(items[k],items[5]+items[6])
-							
-						}
-						itemsRename[names[k]]=items[k];
-					}
-					rowsArr.push(itemsRename);
-				}
-				arr.push(rowsArr);
+						obj[formatArr[i2][0]]= item;
+						return obj;
+					},{})
+				});
+			});
+			function caseMatch(apiStr) {
+				 return apiStr.split(",")[apiStr.split(",").indexOf(apiName)];
 			}
-
-			if(arr.length==1){
-				arr=arr[0];
-			}
-			
-			return arr;
 		},
-
-		parser: function(oriStr){
-
-			return oriStr.split('\u0003').reduce(function(obj,curr){
-	            var items = curr.split('\u0002'),
-	            	symbol = items[1],
-	              	time = datetimeStrFormat(base93decodeString(items[3]));
-
-	            if(symbol !== undefined) {
-	            	obj[symbol] = {
-			            symbol: symbol,
-			            symbolkey: dotToUl(symbol),
-			            name: items[2],
-			            time: time,
-			            price: priceStrFormat(base93decodeString(items[7]),items[5]+items[6]),
-			            hi: priceStrFormat(base93decodeString(items[8]),items[5]+items[6]),
-			            open: priceStrFormat(base93decodeString(items[10]),items[5]+items[6]),
-			            qty: parseInt(base93decodeString(items[13])/10000)+"萬",
-			            diff: priceStrFormat(base93decodeString(items[7])-base93decodeString(items[11]),items[5]+items[6]),
-			            diffpre: "",
-			            low: priceStrFormat(base93decodeString(items[9]),items[5]+items[6]),
-			            ch: base93decodeString(items[15]),
-			            money: parseInt(base93decodeString(items[20])/100000000)+"億",
-			            overtime: compareDateTime(time)
-			        }
-	            }
-		        return obj;
-			},{});
-		},
-
 
 		resultFormat: function(isSuccess,msg,data) {
 			return {
@@ -249,17 +237,17 @@
 			}
 		},
 
-
 		deferred: function() {
-			var myResolve,myReject;
-			var myPromise = new Promise(function(resolve, reject){
-				myResolve = resolve;
-				myReject = reject;
-			});
+			return $.Deferred();
+			// var myResolve,myReject;
+			// var myPromise = new Promise(function(resolve, reject){
+			// 	myResolve = resolve;
+			// 	myReject = reject;
+			// });
 
-			myPromise.resolve = myResolve;
-			myPromise.reject = myReject;
-			return myPromise;
+			// myPromise.resolve = myResolve;
+			// myPromise.reject = myReject;
+			// return myPromise;
 		}
 	}
 

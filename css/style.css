@@ -177,6 +177,8 @@
       width: 100%;
       border-spacing: 0;
       table-layout: fixed; }
+      #stock-ui #quoteList section.stock-table table tr {
+        cursor: pointer; }
       #stock-ui #quoteList section.stock-table table td {
         padding: 10px 20px;
         overflow: hidden; }
@@ -299,35 +301,35 @@
         top: 12px;
         left: 50%; }
       #stock-ui #qdD > input[type=radio]:nth-child(2):before {
-        content: "日Ｋ";
+        content: "30分";
         font-size: 15px;
         margin-left: -15px;
         position: absolute;
         top: 12px;
         left: 50%; }
       #stock-ui #qdD > input[type=radio]:nth-child(3):before {
-        content: "週Ｋ";
+        content: "60分";
         font-size: 15px;
         margin-left: -15px;
         position: absolute;
         top: 12px;
         left: 50%; }
       #stock-ui #qdD > input[type=radio]:nth-child(4):before {
-        content: "月Ｋ";
+        content: "日Ｋ";
         font-size: 15px;
         margin-left: -15px;
         position: absolute;
         top: 12px;
         left: 50%; }
       #stock-ui #qdD > input[type=radio]:nth-child(5):before {
-        content: "５分";
+        content: "週Ｋ";
         font-size: 15px;
         margin-left: -15px;
         position: absolute;
         top: 12px;
         left: 50%; }
-      #stock-ui #qdD > input[type=radio]:last-child:before {
-        content: "60分";
+      #stock-ui #qdD > input[type=radio]:nth-child(6):before {
+        content: "月Ｋ";
         font-size: 15px;
         margin-left: -15px;
         position: absolute;
@@ -354,8 +356,6 @@
     width: 25%; }
   #stock-ui #qdE > div:nth-child(3) > span:first-child > span:first-child {
     margin-right: 10px; }
-  #stock-ui #qdE > div:last-child > span {
-    width: 33%; }
   #stock-ui #stockMenu {
     padding: 0 5px; }
     #stock-ui #stockMenu .sm-block {

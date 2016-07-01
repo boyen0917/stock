@@ -58,7 +58,7 @@ function compareDateTime(dt1){
 
       function priceStrFormat(priceStr,stockType){
         // console.log(priceStr+"   "+ stockType);
-        if(stockType=="sh1400"){
+        /*if(stockType=="sh1400"){
           priceStr=parseFloat(priceStr/100000).toFixed(2);
         }
         if(stockType=="sh1001" || stockType=="sz1001"  || 
@@ -66,8 +66,24 @@ function compareDateTime(dt1){
           stockType=="sh1004" || stockType=="sz1004"  || 
           stockType=="sz1400" || stockType=="hk1010"){
           priceStr=parseFloat(priceStr/1000).toFixed(2);
+        }*/
+        // console.log("priceStrFormat "+stockType);
+        if(stockType.indexOf("sh") >=0 || stockType.indexOf("sz") || stockType.indexOf("sz") ){
+          // console.log("priceStrFormat 1 "+stockType);  
+          if(stockType.indexOf("000")==0 && stockType.indexOf("sh") >=0 ){
+            // console.log("priceStrFormat 2 "+stockType+  "   "+ priceStr);
+            priceStr=parseFloat(priceStr/100000).toFixed(2);   
+            // console.log("priceStrFormat 2-1 "+stockType+  "   "+ priceStr);
+          }else{
+            // console.log("priceStrFormat 3 "+stockType);
+            priceStr=parseFloat(priceStr/1000).toFixed(2);  
+          }
+
         }
-        return priceStr;
+
+
+
+        return +priceStr;
       }
 
 

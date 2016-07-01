@@ -65,8 +65,6 @@ $pageHeaderColor2: #555;
     left: 50%;
 }
 
-
-
 $general: $general2;
 $color: $color2;
 $titleBg: $titleBg2;
@@ -273,7 +271,7 @@ $markBlue: #1c85cd;
 				border-spacing: 0;
 				table-layout:fixed;
 
-
+				tr { cursor: pointer;}
 				td { padding: 10px 20px; overflow: hidden;}
 				td:not(:nth-child(1)) { 
 					text-align: center; 
@@ -371,7 +369,6 @@ $markBlue: #1c85cd;
 			> span:last-child { 
 				border-left: $qdTitleBDR;
 				width: 70%; 
-
 				> div {
 					max-width: 80%;
     				margin: auto;
@@ -381,8 +378,6 @@ $markBlue: #1c85cd;
 						span.red { color: red }
 						span:nth-child(2) { margin-left: 10px}
 					}
-
-
 				}
 			}
 		}
@@ -427,12 +422,14 @@ $markBlue: #1c85cd;
 		    cursor: pointer;
 		    @include mixinAppearanceNone();
 
-		    &:first-child:before { @include qdERadio("分時") }
-		    &:nth-child(2):before { @include qdERadio("日Ｋ") }
-		    &:nth-child(3):before { @include qdERadio("週Ｋ") }
-		    &:nth-child(4):before { @include qdERadio("月Ｋ") }
-		    &:nth-child(5):before { @include qdERadio("５分") }
-		    &:last-child:before { @include qdERadio("60分") }
+		    &:first-child:before  { @include qdERadio("分時")  }
+		    // &:nth-child(2):before { @include qdERadio("5分") }
+		    &:nth-child(2):before { @include qdERadio("30分") }
+		    &:nth-child(3):before { @include qdERadio("60分") }
+		    // &:nth-child(5):before { @include qdERadio("120分") }
+			&:nth-child(4):before { @include qdERadio("日Ｋ") }
+		    &:nth-child(5):before { @include qdERadio("週Ｋ") }
+		    &:nth-child(6):before { @include qdERadio("月Ｋ") }
 		}
 
 		> input[type=radio]:checked { background: #e2eeff }
@@ -459,7 +456,7 @@ $markBlue: #1c85cd;
 		> div:nth-child(2) > span { width: 25%; }
 		> div:nth-child(3) > span { width: 25%; }
 		> div:nth-child(3) > span:first-child > span:first-child { margin-right: 10px; }
-		> div:last-child > span { width: 33%; }
+		// > div:last-child > span { width: 33%; }
 
 	}
 

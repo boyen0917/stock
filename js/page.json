@@ -1,0 +1,141 @@
+{
+	quoteList: {
+		qlA: {
+			html: function() {
+				return '<section class="page-header">' +
+				'<button class="menu left"></button><div>行情中心</div><button class="right search"></button>' +
+				'</section>';
+			},
+			init: function() {
+				// // 去搜尋頁
+				// self.stockView.assign({
+				// 	viewId: "qsA_input",
+				// 	elem: viewObj.getElementsByTagName("input")[0],
+				// 	eventBinding: function(thisElem) {
+				// 		thisElem.addEventListener("keypress",self);
+				// 	}
+				// })
+
+			}					
+		},
+
+		qlB: {
+			html: function() {
+				return '<section class="stock-table">' +
+				'	<table><thead><tr><th>名稱代碼</th><th>最新價</th><th>漲跌幅</th></thead><tbody></tbody></table>' +
+				'</section>';
+			},
+			init: function() {
+				getQuoteListView.call(this);
+			}					
+		}
+	},
+
+	quoteSearch: {
+		qsA: {
+			html: function() {
+				return '<section class="search">' +
+				'	<span class="input"><input placeholder="請輸入股票名稱/代號/首字母"></span>' +
+				'	<span class="button"><button class="edit">送出</button></span>' +
+				'</section>';
+			},
+			init: function() {
+				var self = this,
+					viewObj = this.stockView.map.qsA.elem;
+
+				// 輸入股票event
+				self.stockView.assign({
+					viewId: "qsA_input",
+					elem: viewObj.getElementsByTagName("input")[0],
+					eventBinding: function(thisElem) {
+						thisElem.addEventListener("keypress",self);
+					}
+				})
+
+				// 送出event
+				self.stockView.assign({
+					viewId: "qsA_submit",
+					elem: viewObj.getElementsByTagName("button")[0],
+					eventBinding: function(thisElem) {
+						thisElem.addEventListener("click",self);
+					}
+				})
+			}					
+		}
+	},
+
+	quoteDetail: {
+		qdA: {
+			html: function() {
+				return '<section class="title">' +
+				' <span><div name="price"></div><div><span name="diff"></span><span name="diffper"></span></div></span>' +
+				' <span>' +
+				' 	<div><span><span>量: </span><span name="qty"></span></span><span><span>高: </span><span name="hi"></span></span></div>' +
+				' 	<div><span><span>開: </span><span name="open"></span></span><span><span>低: </span><span name="low"></span></span></div>' +
+				' </span>' +
+				'</section>';
+			},
+			init: function() {
+				var self = this, // this => bind stockUI
+					viewObj = self.stockView.map.qdA;
+
+				viewObj.render = function() {
+					var qdData = self.stockView.map["page-quoteDetail"].data;
+
+					if(Object.keys(qdData).length > 0) {
+						viewObj.elem.querySelectorAll("[name]").forEach(function(thisElem) {
+							// thisElem.addClass("red");
+							thisElem.innerHTML = qdData[thisElem.getAttribute("name")] || "";
+						});
+					}
+				}
+			}					
+		},
+
+		qdB: {
+			html: function() {
+				return '<section class="k-chart">k線圖</section>'
+			},
+			init: function() {
+				var self = this; // this => bind stockUI
+			}					
+		},
+
+		qdC: {
+			html: function() {
+
+				return '<section class="content"> ' +
+				' <div><span>今收</span><span name="price"></span></div>' +
+				' <div><span>今開</span><span name="open"></span></div>' +
+				' <div><span>最高</span><span name="hi"></span></div>' +
+				' <div><span>最低</span><span name="low"></span></div>' +
+				' <div><span>今量</span><span name="qty"></span></div>' +
+				'</section>';
+			},
+			init: function() {
+				var self = this, // this => bind stockUI
+					viewObj = self.stockView.map.qdC;
+
+				viewObj.render = function() {
+					var qdData = self.stockView.map["page-quoteDetail"].data;
+
+					if(Object.keys(qdData).length > 0) {
+						viewObj.elem.querySelectorAll("[name]").forEach(function(thisElem) {
+							// thisElem.addClass("red");
+							thisElem.innerHTML = qdData[thisElem.getAttribute("name")] || "";
+						});
+					}
+				}
+			}					
+		},
+
+		qdD: {
+			html: function() {
+				return ' <span>分時</span><span>K線</span>';
+			},
+			init: function() {
+				
+			}					
+		}
+	}
+}
