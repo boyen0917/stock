@@ -4,11 +4,20 @@
 
 	window.onload = function(){
 
-		window.ui = new window[name]("stock-ui");
+		var componentArr = [
+			"stockMenu"
+		];
+
+		window.stockUIObj = new window[name]("stock-ui");
+
+		stockUIObj.requireComponent(componentArr).done(function(data) {
+			stockUIObj.init();
+		});
+
+		window.ui = stockUIObj;
 	}
 	
 }("StockUI", function() {
-
 
 	var StockUI = function(myStock){
 
@@ -17,6 +26,11 @@
 		self.stockId = "stock-ui";
 
 		self.defaultSymbol = "000001.sh,399001.sz,600000.sh";
+
+		self.optionalSymbol = function() {
+			var optionalSymbolArr = MyStorage.get("optionalSymbolArr") || [];
+			return optionalSymbolArr.length != 0 ? optionalSymbolArr.join(",") : self.defaultSymbol;
+		}();
 
 		self.stockApi = new StockApi();
 
@@ -47,7 +61,7 @@
 			return arr;
 		}();
 		
-		self.init();
+		// self.init();
 
 		// 第一步就是朝所有event 都在這裡 其他的都是customEvent
 		// view 也有自己的handleEvent 是customEvent 統一管理
@@ -55,6 +69,7 @@
 			// 防連點 start
 			var closureObj = {};
 			return function(event) {
+				event.stopPropagation();
 				// 判斷event target 是否存在map中
 				if(event.currentTarget.viewId === undefined) return;
 				var viewId = event.currentTarget.viewId;
@@ -68,7 +83,10 @@
 						switch(viewId) {
 							case "uiBack":
 								self.historyPath.pop();
-								self.changePage(self.historyPath[self.historyPath.length-1].pageId, true);
+								self.changePage({
+									pageId: self.historyPath[self.historyPath.length-1].pageId,
+									isBack: true
+								});	
 								break;
 
 							case "qlA_searchBtn":
@@ -109,13 +127,48 @@
 
 
 							default:
-								if(viewId.indexOf("quote_") === 0) {
-									// window.location = "index.html?pageId=quoteDetail&back=quoteList&chartName=dayk&symbol=" + viewId.split("_")[1];
-									self.showQuoteDetail(self.stockView.map[viewId].data);
+								var viewObj = self.stockView.map[viewId];
 
+								if(viewId.indexOf("quote_") === 0) {
+									self.showQuoteDetail(viewObj.data);
+
+								// 搜尋股票
+								} else if(viewId.indexOf("search_") === 0) {
+									self.stockApi.quote({
+										symbol: viewObj.data.symbol
+									},function(rspObj){
+										var quoteData = rspObj.apiData[0];
+										self.showQuoteDetail(quoteData);
+									});
+
+								// 新增自選
+								} else if(viewId.indexOf("optional_") === 0) {
+									
+									var symbol = viewId.split("_")[1],
+										optionalSymbolArr = MyStorage.get("optionalSymbolArr") || [],
+										pos = optionalSymbolArr.indexOf(symbol);
+
+									// 按鈕變換
+									if(pos < 0) {
+										optionalSymbolArr.push(symbol);
+										viewObj.elem.setAttribute("class","ls-text");
+									} else {
+										optionalSymbolArr.splice(pos,1);
+										viewObj.elem.setAttribute("class","ls-plus");
+									}
+
+									// 回quoteList 要reload
+									// self.stockView.map.quoteList.data.isReload = true;
+
+									MyStorage.set("optionalSymbolArr", optionalSymbolArr);
+									self.optionalSymbol = optionalSymbolArr.join(",");
+
+								// 切換線圖
 								} else if(viewId.indexOf("qdDradio_") === 0) {
 									var symbol = self.stockView.map.quoteDetail.data.body.symbol;
-									// window.location = "index.html?pageId=quoteDetail&back=quoteList&symbol=" + symbol + "&chartName=" + viewId.split("_")[1];
+									self.stockView.map.qdB.data.chartName = viewId.split("_")[1];
+									self.stockView.map.qdB.clean();
+									self.stockView.map.qdB.render();
 								}
 
 						}
@@ -125,22 +178,51 @@
 					case "input":
 						switch(viewId) {
 							case "qsA_input":
-								// self.stockView.map.qlA_input.data.symbol = self.stockView.map.qlA_input.elem.value;
-								if(closureObj.qsAInputTimer !== undefined) {
-									console.log("nonononon");
-									clearTimeout(closureObj.qsAInputTimer)
-								}
+								if(closureObj.qsAInputTimer !== undefined) clearTimeout(closureObj.qsAInputTimer)
+
 								closureObj.qsAInputTimer = setTimeout(function() {
-									console.log("qsAInputTimer go",self.stockView.map[viewId].elem.value);
+									var value = self.stockView.map[viewId].elem.value;
 
+									self.stockApi.search({
+										param: value
+									},function(rspObj) {
+										var table = self.stockView.map["quoteSearch"].elem.getElementsByTagName('table')[0];
+										table.innerHTML = "";
+
+										rspObj.apiData.pop();
+
+										if(rspObj.apiData.length === 0) table.innerHTML = '<tr style="border:0;cursor: auto;"><td><span></span></td><td>查無資料</td><td>';
+										
+										var optionalSymbolArr = MyStorage.get("optionalSymbolArr") || [];
+
+										rspObj.apiData.forEach(function(item,i) {
+
+											self.stockView.create({
+												viewId: "search_" + i,
+												tag: "tr",
+												html: '<td><span name="optionalSymbol" class="'+ (optionalSymbolArr.indexOf(item.symbol) < 0 ? 'ls-plus' : 'ls-text') +'"></span></td><td>'+ item.name +'</td><td>'+ item.symbol.split('.')[0] +'</td>',
+												data: item,
+												eventBinding: function(elem) {
+													elem.addEventListener("click",self);
+													var optionalSymbolElem = elem.querySelectorAll('[name=optionalSymbol]')[0];
+													if(optionalSymbolElem === undefined) return;
+
+													self.stockView.assign({
+														viewId: "optional_" + item.symbol,
+														elem: optionalSymbolElem,
+														eventBinding: function() {
+															optionalSymbolElem.addEventListener("click",self);
+														}
+													})
+												},
+
+												renderNow: function(elem) {
+													table.appendChild(elem);
+												}
+											})
+										})
+									})
 								},500)
-
-								// self.stockApi.search({
-								// 	param: "001"
-								// },function(data) {
-								// 	console.log("heyhey",data);
-								// })
-
 								break;
 						}
 
@@ -162,7 +244,7 @@
 				body: quoteData
 			}});
 
-			self.changePage(pageId);
+			self.changePage({pageId: pageId});
 		};
 
 		self.showQuoteSearch = function(fromViewId) {
@@ -177,7 +259,7 @@
 
 			// content
 
-			self.changePage(pageId);
+			self.changePage({pageId: pageId});
 		};
 	}
 
@@ -222,6 +304,27 @@
 
 			document.getElementById(self.indexPageObj.pageId).addClass("active");
 			
+		},
+
+		requireComponent: function(componentArr) {
+			var self = this, defArr = [];
+
+			componentArr.forEach(function(component) {
+				var deferred = self.stockApi.deferred();
+				defArr.push(deferred);
+
+				var script = document.createElement("script");
+				script.src = "js/" + component + ".js";
+				document.body.appendChild(script);
+				script.onload = deferred.resolve;
+			})
+			
+			return $.when.apply($,defArr);
+		},
+
+		setComponent: function(name, component) {
+			var self = this;
+			self.stockView.pageComponentMap[name] = component;
 		},
 
 		slidePage: function () {
@@ -269,16 +372,11 @@
 				data: {
 					title: argObj.title,
 					body: argObj.data
-				}
+				},
+				noPageHeader: argObj.noPageHeader
 			}).then(function(){
-				self.changePage(argObj.pageId);	
+				self.changePage({pageId: argObj.pageId});	
 			});
-			// // page title
-			// this.stockView.map["page-header-" + argObj.pageId].data = argObj.title;
-			// this.stockView.map["page-header-" + argObj.pageId].render();
-
-			// if(argObj.init instanceof Function) argObj.init();
-			
 		},
 
 		maskReset: function(argObj) {
@@ -315,12 +413,12 @@
 			var self = this,
 				pageId = initObj.pageId,
 				pageElem = document.getElementById(pageId),
-				pageViewObj = self.stockView.pageComponentMap[pageId],
+				pageCpntObj = self.stockView.pageComponentMap[pageId],
 				pageInitdef = self.deferred(),
 				allDoneDef = self.deferred();
 
-			if(initObj.data === undefined && pageViewObj.pageInit instanceof Function)
-				pageViewObj.pageInit.call(self).then(pageInitdef.resolve);
+			if(initObj.data === undefined && pageCpntObj.pageInit instanceof Function)
+				pageCpntObj.pageInit.call(self).then(pageInitdef.resolve);
 			else 
 				pageInitdef.resolve(initObj.data);
 
@@ -330,7 +428,6 @@
 						viewId: pageId,
 						elem: pageElem,
 						render: function() {
-
 							// title initial
 							if(initObj.noPageHeader !== true) {
 								self.prependPageHeader({
@@ -339,12 +436,12 @@
 								});	
 							}
 							// 該頁面的成員 去畫面中尋找 並進行初始化
-							Object.keys(self.stockView.pageComponentMap[pageId]).forEach(function(cpntId) {
-								var cpntObj = self.stockView.pageComponentMap[pageId][cpntId],
+							Object.keys(pageCpntObj).forEach(function(cpntId) {
+								var cpntObj = pageCpntObj[cpntId],
 									viewObj = self.stockView.map[cpntId];
 
-								if(document.getElementById(cpntId) === null) return;
-
+								if(	document.getElementById(cpntId) === null) return;
+								
 								if(self.stockView.map[cpntId] === undefined) {
 									// 寫入component html
 									document.getElementById(cpntId).innerHTML = cpntObj.html();
@@ -359,11 +456,17 @@
 							})
 						}
 					});
+
+
 				}
 
+				// 設定初始資料
 				if(pageInitData !== undefined) self.stockView.map[pageId].data = pageInitData;
-				self.stockView.map[pageId].render();
 
+				// 設定reload
+				self.stockView.map[pageId].pageReload = pageCpntObj.pageReload;
+
+				self.stockView.map[pageId].render();
 				allDoneDef.resolve();
 			});
 
@@ -404,33 +507,45 @@
 			self.stockView.map[viewId].render();
 		},
  
-		changePage: function(pageId,isBack) {
+		changePage: function(argObj) {
 			var self = this,
-				direction = (isBack || false) ? "prev" : "next";
+				pageId = argObj.pageId,
+				direction = (argObj.isBack || false) ? "prev" : "next",
 
-			// 可能不存在上一頁
-			// self.pageInitial({pageId: pageId, noPageHeader: true}).then(function() {
+				nextPageViewObj = self.stockView.map[pageId],
+				nextPageElem = nextPageViewObj.elem,
+				oriPageElem = document.querySelectorAll("section[data-role=page].active")[0];
 
-				var nextPage = self.stockView.map[pageId].elem,
-					oriPage = document.querySelectorAll("section[data-role=page].active")[0];
 
-				oriPage.addClass("back").removeClass("active");
-				nextPage.addClass(direction);
+			oriPageElem.addClass("back").removeClass("active");
+			nextPageElem.addClass(direction);
 
-				setTimeout(function(){
-					nextPage
-					.addClass("active")
-					.removeClass(direction)
-					.style.transition = "0.5s";
+			// 看下一頁是否需要reload
+			if( nextPageViewObj.pageReload instanceof Function
+			) {
+				nextPageViewObj.pageReload.call(self);
+				// nextPageViewObj.data.isReload = false;
+			};
 
-					// 動畫結束再刪掉
-					setTimeout(function () {
-						oriPage.removeClass.call(oriPage, "back");
-						nextPage.style.transition = "";
-					}, 600)
-					if(isBack !== true) self.historyPath.push({ pageId: pageId})
-				},50);
-			// });
+			setTimeout(function(){
+				nextPageElem.addClass("active").removeClass(direction).style.transition = "0.5s";
+
+				if(argObj.isBack !== true) self.historyPath.push({ pageId: pageId});
+
+				// 清除該清除的 
+				Object.keys(self.stockView.pageComponentMap[oriPageElem.id]).forEach(function(viewId) {
+					var viewObj = self.stockView.map[viewId];
+					if(typeof viewObj !== "object") return;
+					if(viewObj.clean instanceof Function) viewObj.clean();
+				});
+
+				// 動畫結束再刪掉
+				setTimeout(function () {
+					oriPageElem.removeClass("back");
+					nextPageElem.style.transition = "";
+				}, 600)
+
+			},50);
 		}
 	};
 
@@ -444,70 +559,74 @@
 	StockView.prototype = {
 
 		pageComponentMap: {
-			stockMenu: {
-				smA: {
-					html: function() {
-						return '<div><img src="img/qmi.png"><span>水晶股市</span></div>';
-					},
-					init: function() {
+			// stockMenu: {
+			// 	smA: {
+			// 		html: function() {
+			// 			return '<div><img src="img/qmi.png"><span>水晶股市</span></div>';
+			// 		},
+			// 		init: function() {
 
-					}
-				},
+			// 		}
+			// 	},
 
-				smB: {
-					html: function() {
-						return '';
-					},
-					init: function() {
-						var content = ["行情中心","滬深股市","滬港通","香港股市","美國股市","基金","全球指數","期貨","現貨","外匯","黃金","債券"],
-							viewObj = this.stockView.map.smB.elem;
+			// 	smB: {
+			// 		html: function() {
+			// 			return '';
+			// 		},
+			// 		init: function() {
+			// 			var content = ["行情中心","沪深股市","沪港通","香港股市"],
+			// 				viewObj = this.stockView.map.smB.elem;
 
-						viewObj.innerHTML = content.reduce(function(prev,curr,i) {
-							if(i == 1) prev = '<div><span>' + prev + '</span>';
-							if(i % 4 == 0) prev += '</div>';
-							if(i % 4 == 0 && i % 12 != 0) prev += '<div>';
-							return prev + '<span>' + curr + '</span>';
-						});
-					}
-				},
+			// 			viewObj.innerHTML = content.reduce(function(prev,curr,i) {
+			// 				if(i == 1) prev = '<div><span>' + prev + '</span>';
+			// 				if(i % 4 == 0) prev += '</div>';
+			// 				if(i % 4 == 0 && i % 12 != 0) prev += '<div>';
+			// 				return prev + '<span>' + curr + '</span>';
+			// 			});
+			// 		}
+			// 	},
 
-				smC: {
-					html: function() {
-						return '<div class="sm-block">手機東方財富網</div>';
-					},
-					init: function() {
-					}
-				},
+			// 	smC: {
+			// 		html: function() {
+			// 			return '<div class="sm-block">手机水晶森林</div>';
+			// 		},
+			// 		init: function() {
+			// 		}
+			// 	},
 
-				smD: {
-					html: function() {
-						return '<div class="sm-block">我要提意見</div>';
-					},
-					init: function() {
-					}
-				},
+			// 	smD: {
+			// 		html: function() {
+			// 			return '<div class="sm-block">我要提意见</div>';
+			// 		},
+			// 		init: function() {
+			// 		}
+			// 	},
 
-				smE: {
-					html: function() {
-						return '<div class="sm-block">關閉左側導航</div>';
-					},
-					init: function() {
-						var self = this, // this => bind stockUI
-							viewObj = self.stockView.map.smE;
+			// 	smE: {
+			// 		html: function() {
+			// 			return '<div class="sm-block">关闭左侧导航</div>';
+			// 		},
+			// 		init: function() {
+			// 			var self = this, // this => bind stockUI
+			// 				viewObj = self.stockView.map.smE;
 
-						// 輸入股票event
-						self.stockView.assign({
-							viewId: "smE_slideBack",
-							elem: viewObj.elem.getElementsByTagName("div")[0],
-							eventBinding: function(thisElem) {
-								thisElem.addEventListener("click",self);
-							}
-						})
-					}
-				}
-			},
+			// 			// 輸入股票event
+			// 			self.stockView.assign({
+			// 				viewId: "smE_slideBack",
+			// 				elem: viewObj.elem.getElementsByTagName("div")[0],
+			// 				eventBinding: function(thisElem) {
+			// 					thisElem.addEventListener("click",self);
+			// 				}
+			// 			})
+			// 		}
+			// 	}
+			// },
 
 			quoteList: {
+				pageReload: function() {
+					getQuoteListView.call(this);
+				},
+
 				qlA: {
 					html: function() {
 						return '<section class="page-header">' +
@@ -517,6 +636,7 @@
 					init: function() {
 						var self = this,
 							viewObj = this.stockView.map.qlA.elem;
+
 						// 去搜尋頁
 						self.stockView.assign({
 							viewId: "qlA_searchBtn",
@@ -533,19 +653,25 @@
 							eventBinding: function(thisElem) {
 								thisElem.addEventListener("click",self);
 							}
-						})
-
+						});
 					}					
 				},
 
 				qlB: {
 					html: function() {
 						return '<section class="stock-table">' +
-						'	<table><thead><tr><th>名稱代碼</th><th>最新價</th><th>漲跌幅</th></thead><tbody></tbody></table>' +
+						'	<table><thead><tr><th>名称代码</th><th>最新价</th><th>涨跌幅</th></thead><tbody></tbody></table>' +
 						'</section>';
 					},
 					init: function() {
-						getQuoteListView.call(this);
+						var self = this;
+						getQuoteListView.call(self);
+
+						this.stockView.map.qlB.clean = function() {
+							Object.keys(self.stockView.map).forEach(function(key) {
+								if(key.indexOf('quote_') === 0) self.stockView.map[key].remove()
+							});
+						}
 					}					
 				}
 			},
@@ -554,26 +680,38 @@
 				qsA: {
 					html: function() {
 						return '<section class="search">' +
-						'	<span class="input"><input placeholder="請輸入股票名稱/代號/首字母"></span>' +
-						'</section>';
+						'	<span class="input"><input placeholder="请输入股票名称/代码/首字母"></span>' +
+						'</section>' +
+						'<section><table></table></section>';
 					},
 					init: function() {
 						var self = this,
-							viewObj = this.stockView.map.qsA.elem;
+							viewObj = self.stockView.map.qsA;
 
 						// 輸入股票event
 						self.stockView.assign({
 							viewId: "qsA_input",
-							elem: viewObj.getElementsByTagName("input")[0],
+							elem: viewObj.elem.getElementsByTagName("input")[0],
 							eventBinding: function(thisElem) {
 								thisElem.addEventListener("input",self);
 							}
 						})
+
+
+						viewObj.clean = function() {
+							self.stockView.map.qsA_input.elem.value = "";
+							Object.keys(self.stockView.map).forEach(function(key) {
+								if(key.indexOf('search_') === 0 || key.indexOf('optional_') === 0) 
+									self.stockView.map[key].remove();
+							});
+							viewObj.elem.getElementsByTagName('table')[0].innerHTML = "";
+						}
 					}					
 				}
 			},
 
 			quoteDetail: {
+				// 若quoteDetail為首頁 要先取得報價
 				pageInit: function() {
 					var self = this,
 						deferred = self.stockApi.deferred(),
@@ -604,153 +742,143 @@
 
 				qdA: {
 					html: function() {
-						return '<section class="title">' +
-						' <span><div name="price"></div><div><span name="diff"></span><span name="diffper"></span></div></span>' +
-						' <span>' +
-						' 	<div><span><span>量: </span><span name="qty"></span></span><span><span>高: </span><span name="hi"></span></span></div>' +
-						' 	<div><span><span>開: </span><span name="open"></span></span><span><span>低: </span><span name="low"></span></span></div>' +
-						' </span>' +
-						'</section>';
+						return '';
 					},
 					init: function() {
-						var self = this, // this => bind stockUI
-							viewObj = self.stockView.map.qdA;
 						
-						viewObj.render = function() {
-							var qdData = self.stockView.map["quoteDetail"].data.quoteData;
-
-							if(Object.keys(qdData).length > 0) {
-								viewObj.elem.querySelectorAll("[name]").forEach(function(thisElem) {
-									// thisElem.addClass("red");
-									thisElem.innerHTML = qdData[thisElem.getAttribute("name")] || "";
-								});
-							}
-						}
 					}					
 				},
 
 				qdB: {
 					html: function() {
-						return '<div id="chart_div" class="k-chart"><canvas id="chartCanvas" width="600" height="400" style="z-index: 100000; background: transparent;border: 1px solid #69c"></canvas></div>'
+						return '';
 					},
 					init: function() {
 						var self = this,
-							qdData = self.stockView.map["quoteDetail"].data.body,
+							canvasId = "H5Chart",
 							viewObj = self.stockView.map.qdB;
 
-							// 預設線圖 月k
-							// chartName = qdData.chartName || "monthk";
+						viewObj.render = function() {
+							var qdData = self.stockView.map["quoteDetail"].data.body,
+								// 預設線圖 月k
+								chartName = self.indexPageObj.chartName || viewObj.data.chartName || "line";
 
-						viewObj.render = function() {return;
-							var chartName = self.indexPageObj.chartName;
-							viewObj.elem.innerHTML = "";
+							// remove
+							var canvasElem = viewObj.elem.getElementsByTagName("canvas")[0];
+							if(canvasElem !== undefined) canvasElem.parentNode.removeChild(canvasElem);
+							
+							
+							// reset
+							var canvasSize = window.innerWidth > 780 ? 780 : window.innerWidth-20;
+
+							viewObj.elem.innerHTML = '<canvas id="'+ canvasId +'" width="'+ canvasSize +'" height="'+ Math.max(canvasSize*0.66, 450) +'" style="z-index: 100001;background: transparent;"></canvas>';
+
 
 							self.stockApi[chartName]({
 								symbol: qdData.symbol
 							},function(rspObj) {
+								console.log("qdData.symbol",qdData.symbol);
 								console.log("rspObj",rspObj);
 								if(rspObj.isSuccess !== true) {
 									throw "error";
 									return;
 								}
 
-								var drawName = chartName,
-									options = {}, dataArr, packages,
-									lengh = rspObj.apiData.length,
-									sliceArr = rspObj.apiData.slice((lengh > 20 ? lengh - 20 : 0));
-
+								// 時 昨 開 高 滴 收
 								switch(chartName) {
 									case caseMatch(self.stockApi.caseK.split("v2/").join("")):
-										drawName = "k";
 
-										dataArr = sliceArr.map(function(item) {
-											// google [ date, low, open, last, high ],
-											return [item.date.toString(), item.low, item.open, item.last, item.high] ;
+										rspObj.apiData.pop();
+										H5Chart.k({
+											dataArr: rspObj.apiData.map(function(item) {
+												return [item.date, item.open, item.open, item.high, item.low, item.last, item.volume, 0];
+											})
 										});
-
-										options = {
-											legend: 'none',
-											// vAxis: {
-											// 	textPosition: 'in'
-											// },
-											bar: { groupWidth: '15px' }, // Remove space between bars.
-											candlestick: {
-										    	fallingColor: { strokeWidth: 0, fill: 'green' }, // red
-										    	risingColor: { strokeWidth: 0, fill: 'red' }   // green
-											}
-										}
-
-										packages = ['corechart'];
 
 										break;
 									case "line":
-										dataArr = sliceArr.map(function(item) {
-											// line [ time, price, price ],
-											var t = (item.time || "").toString().substring(8).split("");
-											return [t[0]+t[1]+":"+t[2]+t[3], item.lastPrice, item.avgPrice] ;
-										});
-										dataArr.pop();
-										packages = ['corechart', 'line'];
-										console.log("dataArr",dataArr);
+										var lineObj = {
+											quote: {
+							                    time: 20111214150106,
+							                    open: qdData.openPrice,
+							                    preClose: qdData.preClosePrice,
+							                    highest: qdData.highPrice,
+							                    lowest: qdData.highPrice,
+							                    price: qdData.lastPrice,
+							                    volume: qdData.volume,
+							                    amount: 38621178573
+							                },
+							                mins: rspObj.apiData.map(function(item) {
+												return {
+													price: item.lastPrice, 
+													volume: item.volume, 
+													amount: 0
+												}
+											},{})
+										};
+
+										lineObj.mins.pop();
+
+										H5Chart.line({
+											canvasId: canvasId,
+											canvasSize: canvasSize,
+											lineObj: lineObj
+										})
+									 
 										break;
 								}
-
-								chartDrawObj[drawName]({
-									elem: viewObj.elem,
-									dataArr: dataArr,
-									options: options,
-									packages: packages
-								});
-
-								
 							});
 
 							function caseMatch(str) {
 								 return str.split(",")[str.split(",").indexOf(chartName)];
 							}
 						};
+
+						viewObj.clean = function() {
+							console.log("shit");
+							var canvasId = "H5Chart";
 							
-						
-					}					
+							[document.getElementById(canvasId),
+							document.getElementById(canvasId + '_tip'),
+							document.getElementById(canvasId + '_crossLines_H'),
+							document.getElementById(canvasId + '_crossLines_V')]
+							.forEach(function(item) {
+								if(item !== null) item.parentNode.removeChild(item);
+							});
+						}
+					}				
 				},
 
 				qdC: {
 					html: function() {
-
-						return '<section class="content"> ' +
-						' <div><span>今收</span><span name="price"></span></div>' +
-						' <div><span>今開</span><span name="open"></span></div>' +
-						' <div><span>最高</span><span name="hi"></span></div>' +
-						' <div><span>最低</span><span name="low"></span></div>' +
-						' <div><span>今量</span><span name="qty"></span></div>' +
-						'</section>';
+						return '';
 					},
 					init: function() {
-
 					}					
 				},
 
 				qdD: {
 					html: function() {
-						return '<input data-name="line" name="k-cate" type="radio">' +
-						// '<input data-name="m5" name="k-cate" type="radio">' +
-						'<input data-name="m30" name="k-cate" type="radio">' +
-						'<input data-name="m60" name="k-cate" type="radio">' +
-						// '<input data-name="m120" name="k-cate" type="radio">' +
+						return '<input data-name="line" name="k-cate" type="radio" checked>' +
 						'<input data-name="dayk" name="k-cate" type="radio">' +
 						'<input data-name="weekk" name="k-cate" type="radio">' +
-						'<input data-name="monthk" name="k-cate" type="radio">';
+						'<input data-name="monthk" name="k-cate" type="radio">' +
+						'<input data-name="m60" name="k-cate" type="radio">' +
+						'<input data-name="m30" name="k-cate" type="radio">';
 					},
 					init: function() {
 						var self = this,
 							qdData = self.stockView.map["quoteDetail"].data.body,
-							viewObj = self.stockView.map.qdC;
+							viewObj = self.stockView.map.qdD;
 
 							// 預設線圖 月k
 							// chartName = qdData.chartName || "monthk";
 
 						Array.prototype.forEach.call(self.stockView.map.qdD.elem.getElementsByTagName("input"),function(elem,i) {
-							if(elem.dataset.name === self.indexPageObj.chartName) elem.checked = true;
+							if( self.indexPageObj.chartName !== undefined && elem.dataset.name === self.indexPageObj.chartName) 
+								elem.checked = true;
+							else if(i == 0) elem.checked = true;
+							
 							self.stockView.assign({
 								viewId: "qdDradio_" + elem.dataset.name,
 								elem: elem,
@@ -759,22 +887,20 @@
 								},
 							});
 						});
-
-						
 					}					
 				},
 
 				qdE: {
 					html: function() {
 						return '<div></div>' +
-						'<div><span name="lastPrice"></span>' + 
+						'<div><span name="lastPrice" style="font-weight: 600;"></span>' + 
 						'	<span><span>高:</span><span name="highPrice"></span></span>' + 
-						'	<span><span>開:</span><span name="openPrice"></span></span>' + 
-						'	<span><span>量:</span><span><span name="volume"></span>萬</span></span></div>' + 
-						'<div><span><span name="volumeRatio"></span><span><span name="amplitudeRate"></span><span>%</span></span></span>' + 
+						'	<span><span>开:</span><span name="openPrice"></span></span>' + 
+						'	<span><span>量:</span><span><span name="volume"></span><font>万</font></span></span></div>' + 
+						'<div><span style="font-weight: 600;"><span name="volumeRatio"></span><span><span name="amplitudeRate"></span><font>%</font></span></span>' + 
 						'	<span><span>低:</span><span name="lowPrice"></span></span>' + 
-						'	<span><span>換:</span><span name="change"></span></span>' + 
-						'	<span><span>額:</span><span><span name="amount"></span>萬</span></span></div>'
+						'	<span><span>换:</span><span name="change"></span></span>' + 
+						'	<span><span>额:</span><span><span name="amount"></span><font>万</font></span></span></div>'
 						// '<div><span><span>上漲家數：</span><span name="">44</span></span>' + 
 						// '	<span><span>平盤家數：</span><span name="">55</span></span>' + 
 						// '	<span><span>下跌家數：</span><span name="">66</span></span></div>'
@@ -785,19 +911,25 @@
 							viewObj = self.stockView.map.qdE;
 						
 						viewObj.render = function() {
-							var qdData = self.stockView.map["quoteDetail"].data.body;
+							var qdData = self.stockView.map["quoteDetail"].data.body,
+								colorArr = ["lastPrice", "volumeRatio", "amplitudeRate"];
 							viewObj.elem.getElementsByTagName('div')[0].innerHTML = qdData.name + "(" + qdData.symbol + ")";
+
 
 							if(Object.keys(qdData).length > 0) {
 								Array.prototype.forEach.call(viewObj.elem.querySelectorAll("[name]"), function(thisElem) {
-									// thisElem.addClass("red");
+									if(colorArr.indexOf(thisElem.getAttribute("name")) !== -1) {
+										thisElem.setAttribute("class", qdData.diffClass + "-text");
+										if(thisElem.getAttribute("name") === "amplitudeRate")
+											thisElem.parentNode.getElementsByTagName('font')[0].setAttribute("class", qdData.diffClass + "-text");
+									}
 									thisElem.innerHTML = qdData[thisElem.getAttribute("name")] || "";
 								});
 							}
 						}
-					}					
-				}
-			}
+					} // init					
+				} // qdE
+			} // quoteDetail
 		},
 
 		create: function(argObj) {
@@ -839,7 +971,7 @@
 				argObj.elem = elem;
 				argObj.viewId = viewId;
 
-				return self.assign(argObj);
+				self.assign(argObj);
 
 			// } catch(e) {
 			// 	throw "StockUI createView syntax error";
@@ -879,26 +1011,18 @@
 		// ajax interval
 		// setInterval(function quoteInterval() {
 
-			// 比較原來的選股 沒有就刪除
-			// var symbolStr = self.stockView.map.qlA_input.elem.value || self.defaultSymbol;
-			// Object.keys(self.stockView.map).filter(function (viewId) {
-			// 	return viewId.indexOf("quote_") === 0;
-			// }).forEach(function (viewId) {
-			// 	if(symbolStr.indexOf(viewId.split("_")[1]) < 0) {
-			// 		self.stockView.map[viewId].remove();
-			// 	}
-			// });
-
 			// self.stockView.map.qlA_input.elem.value = "";
+			var optionalSymbol = self.optionalSymbol !== "" ? self.optionalSymbol : self.defaultSymbol;
 
 			self.stockApi.quote({
-				symbol: self.defaultSymbol
+				symbol: optionalSymbol
 			},function(rspObj){
 				var dataArr = rspObj.apiData,
 					viewIdArr = [];
 
 				if(rspObj.isSuccess !== true) return;
-				
+
+				self.stockView.map.qlB.clean();
 
 				dataArr.forEach(function(stockObj) {
 					if(stockObj.status === "") return;
@@ -907,41 +1031,47 @@
 
 					viewIdArr.push(viewId);
 
-					if(self.stockView.map[viewId] === undefined) {
-
-						self.stockView.create({
-							viewId: viewId,
-							tag: "tr",
-							html: '<td></td><td></td><td></td>',
-							data: stockObj,
-
-							eventBinding: function(elem) {
-								elem.addEventListener("click",self);
-							},
-
-							render: function(viewId) {
-								return function(){
-									var viewObj = self.stockView.map[viewId];
-									// var tempPrice = Math.floor((parseInt(this.data.price) + (Math.random()*100 -50))*100)/100;
-									viewObj.elem.getElementsByTagName("td")[0].innerHTML = viewObj.data.name;
-									viewObj.elem.getElementsByTagName("td")[1].innerHTML = viewObj.data.lastPrice;
-									viewObj.elem.getElementsByTagName("td")[2].innerHTML = function(){
-										if(+viewObj.data.openPrice === 0) 
-											var diffPct = "--", diffClass = "";
-										else
-											var diffPct = Math.round(((viewObj.data.lastPrice - viewObj.data.openPrice) / viewObj.data.openPrice) * 10000) / 100 + "%",
-												diffClass = diffPct === "0%" ? "" : (diffPct < 0 ? "fall" : "rise");
-
-
-										return '<div class="change ' + diffClass + '">' + diffPct + '</div>';
-									}();
-									self.mainElement.getElementsByTagName('tbody')[0].appendChild(viewObj.elem);
-								}
-							}(viewId)
-						});
-					} else {
+					if(self.stockView.map[viewId] !== undefined) {
 						self.stockView.map[viewId].data = stockObj;
+						return;
 					}
+
+					self.stockView.create({
+						viewId: viewId,
+						tag: "tr",
+						html: '<td></td><td></td><td></td>',
+						data: stockObj,
+
+						eventBinding: function(elem) {
+							elem.addEventListener("click",self);
+						},
+						render: function(viewId) {
+							return function(){
+								var viewObj = self.stockView.map[viewId],
+									diffPrice = viewObj.data.lastPrice - viewObj.data.openPrice,
+									diffClass = function() {
+										if(diffPrice > 0) return "rise";
+										if(diffPrice < 0) return "fall";
+										return "";
+									}();
+
+								// if(viewObj.data.name === "浦发银行") diffClass = "fall";
+								viewObj.data.diffClass = diffClass;
+
+
+								// var tempPrice = Math.floor((parseInt(this.data.price) + (Math.random()*100 -50))*100)/100;
+								viewObj.elem.getElementsByTagName("td")[0].innerHTML = viewObj.data.name;
+								viewObj.elem.getElementsByTagName("td")[1].innerHTML = '<font class="'+ diffClass +'-text">' + viewObj.data.lastPrice + '</font>';
+								viewObj.elem.getElementsByTagName("td")[2].innerHTML = function(){
+									var diffPct = viewObj.data.openPrice != 0 ? Math.round(((diffPrice) / viewObj.data.openPrice) * 10000) / 100 : "--";
+									return '<div class="change ' + diffClass + '">' + diffPct + '%</div>';
+								}();
+								self.mainElement.getElementsByTagName('tbody')[0].appendChild(viewObj.elem);
+							}
+						}(viewId)
+					});
+
+						
 				}); 
 
 				viewIdArr.forEach(function(thisViewId) {
@@ -949,54 +1079,14 @@
 				});
 			});
 
-		// return quoteInterval }(),3000); // end of setInterval
+		// return quoteInterval }(),30000); // end of setInterval
 	};
 
-	var chartDrawObj = {
-		k: function(argObj) {
-			google.charts.load('current', {packages: argObj.packages});
-			google.charts.setOnLoadCallback(function() {
-				var data = google.visualization.arrayToDataTable(argObj.dataArr, true);
-				var chart = new google.visualization.CandlestickChart(argObj.elem);
-				chart.draw(data, argObj.options);
-			});
-		},
-
-		line: function(argObj) {
-			google.charts.load('current', {packages: argObj.packages});
-			google.charts.setOnLoadCallback(function() {
-				var data = new google.visualization.DataTable();
-			    data.addColumn('string', 'time');
-			    data.addColumn('number', '成交');
-			    data.addColumn('number', '均價');
-
-			   //  argObj.dataArr = [
-			   //  [9, 40, 32],  [10, 32, 24], [11, 35, 27],
-      //   [12, 30, 22], [13, 40, 32], [14, 42, 34], [15, 47, 39], [16, 44, 36], [17, 48, 40],
-      //   [18, 52, 44], [19, 54, 46], [20, 42, 34], [21, 55, 47], [22, 56, 48], [23, 57, 49],
-      //   [24, 60, 52], [25, 50, 42], [26, 52, 44], [27, 51, 43], [28, 49, 41], [29, 53, 45],
-      //   [30, 55, 47], [31, 60, 52], [32, 61, 53], [33, 59, 51], [34, 62, 54], [35, 65, 57],
-      //   [36, 62, 54], [37, 58, 50], [38, 55, 47], [39, 61, 53], [40, 64, 56], [41, 65, 57],
-      //   [42, 63, 55], [43, 66, 58], [44, 67, 59], [45, 69, 61], [46, 69, 61], [47, 70, 62],
-      //   [48, 72, 64], [49, 68, 60], [50, 66, 58], [51, 65, 57], [52, 67, 59], [53, 70, 62],
-      //   [54, 71, 63], [55, 72, 64], [56, 73, 65], [57, 75, 67], [58, 70, 62], [59, 68, 60],
-      //   [60, 64, 56], [61, 60, 52], [62, 65, 57], [63, 67, 59], [64, 68, 60], [65, 69, 61],
-      //   [66, 70, 62], [67, 72, 64], [68, 75, 67], [69, 80, 72]
-      // ];
-      console.log("argObj.dataArr",argObj.dataArr);
-			    data.addRows(argObj.dataArr);
-
-			    var chart = new google.visualization.LineChart(argObj.elem);
-
-			    chart.draw(data, argObj.options);
-			});
-
-			    
-		}
-	}
 
 	function removeView() {
-		this.mapObj[this.viewId].elem.parentNode.removeChild(this.mapObj[this.viewId].elem);
+		if(this.mapObj[this.viewId].elem.parentNode !== undefined)
+			this.mapObj[this.viewId].elem.parentNode.removeChild(this.mapObj[this.viewId].elem);
+
 		delete this.mapObj[this.viewId];
 	};
 
@@ -1006,6 +1096,7 @@
 		'<div style="font-size:16px;">' + quoteData.name + '</div>' +
 		'<div style="font-size:12px;">' + quoteData.symbol + '</div></div>';
 	}
+
 
 	// tool
 	Element.prototype.addClass = function(cn){
@@ -1023,7 +1114,21 @@
 		return this;
 	}
 
+    var MyStorage = {
+    	get: function(itemName) {
+    		try {
+    			return JSON.parse(localStorage.getItem(itemName));
+    		} catch(e) {
+    			return localStorage.getItem(itemName);
+    		}
+    	},
+    	set: function(itemName, itemValue) {
+    		if(itemValue === undefined) throw "parameter 2 is necessary";
 
+    		if(typeof item === "string") localStorage.setItem(itemName, itemValue);
+    		else localStorage.setItem(itemName, JSON.stringify(itemValue));
+    	}
+    }
 
 
 

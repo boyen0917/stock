@@ -8,7 +8,7 @@
 
 	window.StockGlobal = {
 
-		domain: "180.163.112.216:22016",
+		domain: "114.80.155.134:22016",
 
 		token: "MitakeWeb"
 
@@ -28,6 +28,11 @@
 		// k線圖
 		self.caseK = "v2/m5,v2/m15,v2/m30,v2/m60,v2/m120,v2/dayk,v2/weekk,v2/monthk";
 
+		// auth
+
+		self.auth();
+
+
 		// api list
 
 		self.quote = function(optionObj,cb){
@@ -41,6 +46,14 @@
 		self.cateranking = function(optionObj,cb){
 			self.api({
 				apiName: "v2/cateranking",
+				symbol: optionObj.symbol,
+				callback: cb
+			});
+		};
+
+		self.revcateranking = function(optionObj,cb){
+			self.api({
+				apiName: "v2/revcateranking",
 				symbol: optionObj.symbol,
 				callback: cb
 			});
@@ -77,6 +90,13 @@
 		self.line = function(optionObj,cb){
 			self.api({
 				apiName: "v2/line",
+				symbol: optionObj.symbol,
+				callback: cb
+			});
+		};
+		self.line5d = function(optionObj,cb){
+			self.api({
+				apiName: "v2/line5d",
 				symbol: optionObj.symbol,
 				callback: cb
 			});
@@ -143,12 +163,40 @@
 
 	StockApi.prototype = {
 
-		api: function(args){
+		auth: function() {
+			// {
+			// 	timestamp: "1467561796402",
+			// 	os: "4.4.2",
+			// 	platform: "AndroidPhone",
+			// 	hid: "9ee26089c8657ad2M9N7N15315007486867066023120077",
+			// 	name: "com.android.haitong",
+			// 	appkey: "BiiilRwAYsKdk828aRMb8ktOXfaTPWAZo1tibfkrkXQ=",
+			// 	device: "HUAWEIMT7-TL10",
+			// 	brand: "Huawei",
+			// 	ver: "53",
+			// 	bid: "00015"
+			// }
+			// timestamp 打 echo
+
+			var self = this;
+
+			self.api({
+				apiName: "v1/service/echo",
+				callback: function(data) {
+					console.log("dd",data);
+				}
+			})
+		},
+
+		api: function(args) {
 			var self = this,
 				deferred = self.deferred();
 			new MyAjax(args).done(function(rspObj) {
-
-				rspObj.apiData = self.toArray(args.apiName, rspObj.data.responseText, args.symbol);
+				if(rspObj.isSuccess === true) 
+					rspObj.apiData = self.toArray(args.apiName, rspObj.data.responseText, args.symbol);
+				else 
+					rspObj.apiData = {};
+				
 				rspObj.args = args;
 
 				if(rspObj.apiData.length==1) rspObj.apiData = rspObj.apiData[0];
@@ -166,7 +214,7 @@
 			var self = this, itemObj = {};
 			// return [name, isDecode, isPrice]
 			switch(apiName) {
-				case caseMatch("v2/quote,v2/cateranking,v2/catequote"):
+				case caseMatch("v2/quote,v2/cateranking,v2/revcatequote,v2/catequote"):
 					return [
 						["status",		false,false],	["symbol",			false,false],	["name",			false,false],	["datetime",	true ,true ],	["pinyin",		false,false],				
 						["market",		false,false],	["subtype",			false,false],	["lastPrice",		true ,true ],	["highPrice",	true ,true ],	["lowPrice",	true ,true ],		
@@ -188,9 +236,9 @@
 					return [["date", true, false],["time", true, false],["open", true, true],["high", true, true],["low", true, true],["last", true, true],["volume", true, false],["prefPrice", true, true]];
 					break;
 
-				case caseMatch("v2/line"):
+				case caseMatch("v2/line,v2/line5d"):
 					// 最新价[2]成交量[2]时间[2]均价[3]
-					return [["lastPrice", true, true],["volume", true, true],["time", true, false],["avgPrice", true, true]];
+					return [["lastPrice", true, true],["volume", true, false],["time", true, false],["avgPrice", true, true]];
 					break;
 			}
 
@@ -211,12 +259,16 @@
 						// isPrice
 						if(formatArr[i2][2]){
 							switch(apiName) {
-								case caseMatch("v2/quote,v2/cateranking,v2/catequote"):
+								case caseMatch("v2/quote,v2/cateranking,v2/revcateranking,v2/catequote"):
 									item = priceStrFormat(item, oriArr[1]);
 								break;
 								case caseMatch(self.caseK):
 									item = priceStrFormat(item, symbol);
 								break;
+								case caseMatch("v2/line,v2/line5d"):
+									item = priceStrFormat(item, symbol);
+								break;
+
 							}
 						}
 						obj[formatArr[i2][0]]= item;
@@ -290,7 +342,7 @@
 				return newHeaders;
 			}(),
 
-			timeout: 3000,
+			timeout: 100000,
 
 			type: args.method || "get"
 		};

@@ -61,6 +61,10 @@
   #stock-ui .fall {
     background: #1F7425;
     color: white; }
+  #stock-ui .rise-text {
+    color: red; }
+  #stock-ui .fall-text {
+    color: #1F7425; }
   #stock-ui > .content {
     width: 100vw;
     height: 100vh;
@@ -301,35 +305,35 @@
         top: 12px;
         left: 50%; }
       #stock-ui #qdD > input[type=radio]:nth-child(2):before {
-        content: "30分";
-        font-size: 15px;
-        margin-left: -15px;
-        position: absolute;
-        top: 12px;
-        left: 50%; }
-      #stock-ui #qdD > input[type=radio]:nth-child(3):before {
-        content: "60分";
-        font-size: 15px;
-        margin-left: -15px;
-        position: absolute;
-        top: 12px;
-        left: 50%; }
-      #stock-ui #qdD > input[type=radio]:nth-child(4):before {
         content: "日Ｋ";
         font-size: 15px;
         margin-left: -15px;
         position: absolute;
         top: 12px;
         left: 50%; }
-      #stock-ui #qdD > input[type=radio]:nth-child(5):before {
+      #stock-ui #qdD > input[type=radio]:nth-child(3):before {
         content: "週Ｋ";
         font-size: 15px;
         margin-left: -15px;
         position: absolute;
         top: 12px;
         left: 50%; }
-      #stock-ui #qdD > input[type=radio]:nth-child(6):before {
+      #stock-ui #qdD > input[type=radio]:nth-child(4):before {
         content: "月Ｋ";
+        font-size: 15px;
+        margin-left: -15px;
+        position: absolute;
+        top: 12px;
+        left: 50%; }
+      #stock-ui #qdD > input[type=radio]:nth-child(5):before {
+        content: "60分";
+        font-size: 15px;
+        margin-left: -15px;
+        position: absolute;
+        top: 12px;
+        left: 50%; }
+      #stock-ui #qdD > input[type=radio]:nth-child(6):before {
+        content: "30分";
         font-size: 15px;
         margin-left: -15px;
         position: absolute;
@@ -393,6 +397,40 @@
       line-height: 30px;
       cursor: pointer;
       font-size: 15px; }
+  #stock-ui #qsA .ls-plus {
+    width: 22px;
+    height: 22px;
+    background: cornflowerblue;
+    border-radius: 20px;
+    position: relative;
+    top: 3px;
+    left: 15px; }
+    #stock-ui #qsA .ls-plus:before {
+      content: "+";
+      position: absolute;
+      top: -4px;
+      left: 3.5px;
+      color: white;
+      font-size: 20px; }
+  #stock-ui #qsA .ls-text {
+    vertical-align: top; }
+    #stock-ui #qsA .ls-text:before {
+      content: "已選";
+      position: absolute;
+      left: 27px;
+      color: #bbb; }
+  #stock-ui #qsA table {
+    width: 92%;
+    margin-left: 4%;
+    border-collapse: collapse; }
+    #stock-ui #qsA table tr {
+      height: 50px;
+      border-bottom: 1px solid #eee;
+      cursor: pointer; }
+      #stock-ui #qsA table tr td:first-child {
+        width: 20%; }
+    #stock-ui #qsA table tr:hover {
+      background: aliceblue; }
   #stock-ui .col-1, #stock-ui .col-2, #stock-ui .col-3, #stock-ui .col-4, #stock-ui .col-5, #stock-ui .col-6, #stock-ui .col-7, #stock-ui .col-8, #stock-ui .col-9, #stock-ui .col-10, #stock-ui .col-11, #stock-ui .col-12 {
     float: left;
     position: relative;

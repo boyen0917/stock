@@ -155,6 +155,9 @@ $markBlue: #1c85cd;
 	.rise { background: red; overflow: hidden; color: white;}
 	.fall { background: #1F7425; color: white;}
 
+	.rise-text { color: red;}
+	.fall-text { color: #1F7425;}
+
 
 	> .content {
 	    width: 100vw;
@@ -423,13 +426,11 @@ $markBlue: #1c85cd;
 		    @include mixinAppearanceNone();
 
 		    &:first-child:before  { @include qdERadio("分時")  }
-		    // &:nth-child(2):before { @include qdERadio("5分") }
-		    &:nth-child(2):before { @include qdERadio("30分") }
-		    &:nth-child(3):before { @include qdERadio("60分") }
-		    // &:nth-child(5):before { @include qdERadio("120分") }
-			&:nth-child(4):before { @include qdERadio("日Ｋ") }
-		    &:nth-child(5):before { @include qdERadio("週Ｋ") }
-		    &:nth-child(6):before { @include qdERadio("月Ｋ") }
+			&:nth-child(2):before { @include qdERadio("日Ｋ") }
+		    &:nth-child(3):before { @include qdERadio("週Ｋ") }
+		    &:nth-child(4):before { @include qdERadio("月Ｋ") }
+		    &:nth-child(5):before { @include qdERadio("60分") }
+		    &:nth-child(6):before { @include qdERadio("30分") }
 		}
 
 		> input[type=radio]:checked { background: #e2eeff }
@@ -508,6 +509,50 @@ $markBlue: #1c85cd;
 		}
 	}
 
+	#qsA {
+
+		.ls-plus {
+		    width: 22px;
+		    height: 22px;
+		    background: cornflowerblue;
+		    border-radius: 20px;
+		    position: relative;
+		    top: 3px;
+		    left: 15px;
+			&:before {
+			    content: "+";
+			    position: absolute;
+			    top: -4px;
+			    left: 3.5px;
+			    color: white;
+			    font-size: 20px;
+			}
+		}
+
+		.ls-text {
+			vertical-align: top;
+			&:before {
+			    content: "已選";
+			    position: absolute;
+			    left: 27px;
+			    color: #bbb;
+			}
+		}
+
+		table {
+			width: 92%;
+			margin-left: 4%;
+		    border-collapse: collapse;
+		    tr {
+		        height: 50px;
+	    		border-bottom: 1px solid #eee;
+	    		cursor: pointer;
+	    		td:first-child { width: 20%; }
+		    }
+
+		    tr:hover { background: aliceblue; }
+		}
+	}
 
 	// bootstrap
 
