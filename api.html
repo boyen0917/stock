@@ -11,11 +11,18 @@
 
         <script src="tool/func.js"></script>
     	<script src="tool/base93.js"></script>
+        <script src="tool/3des.js"></script>
 	</head>
 	<body>
 
 		<script>
 			var stockObj = new StockApi();
+
+            stockObj.quote({
+                symbol: "000001.sh",
+            }, function(rspObj) {
+                console.log("rspObj", rspObj);
+            })
 		</script>
 
 	</body>

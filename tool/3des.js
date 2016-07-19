@@ -1,19 +1,18 @@
-<!DOCTYPE html>
-<html>
-    <head>
-        <meta charset="utf-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1">
+(function(name, des){
 
-        <!-- 請改成下載好的jquery -->
-        <script src="js/jquery.min.js"></script>
+    window[name] = {
+        //3DES加密，CBC/PKCS5Padding
+        encrypt:function(key,input){
+            return btoa(des(key, input, 1, 0, 0, 1));
+        },
+        ////3DES解密，CBC/PKCS5Padding
+        decrypt:function(key,input){
+            return des(key, atob(input), 0, 0, 0, 1); 
+        }
+    };
 
-	</head>
-	<body>
-
-		<script>
-
-
-
+}("DES3", function(){
+    
     function des (key, message, encrypt, mode, iv, padding) {
         if(encrypt) //如果是加密的话，首先转换编码
             message = unescape(encodeURIComponent(message));
@@ -129,7 +128,6 @@
             //转换成UTF-8编码
             result = decodeURIComponent(escape(result));
         }
-     
         return result;
     } //end of des
      
@@ -208,20 +206,5 @@
         //return the keys we've created
         return keys;
     } //end of des_createKeys
-     
-    var DES3 = {
-        //3DES加密，CBC/PKCS5Padding
-        encrypt:function(key,input){
-            return btoa(des(key, input, 1, 0, 0, 1));
-        },
-        ////3DES解密，CBC/PKCS5Padding
-        decrypt:function(key,input){
-            return des(key, atob(input), 0, 0, 0, 1); 
-        }
-    }
-
-
-		</script>
-
-	</body>
-</html>
+    return des;
+}()))
